@@ -1,1 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
+<title>Word Fall</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: black;
+  overflow: hidden;
+  touch-action: manipulation;
+  overscroll-behavior: none;
+  font-family: system-ui, sans-serif;
+}
+
+.game {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.hint {
+  color: #fff;
+  font-size: 24px;
+  margin-bottom: 10px;
+  font-family: monospace;
+}
+
+canvas {
+  background: #000;
+  border: none !important;
+  display: block;
+}
+
+#introScreen {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  opacity: 1;
+  transition: opacity 0.8s ease;
+}
+
+.title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 32px;
+  color: white;
+  display: flex;
+  gap: 6px;
+}
+
+.title span {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: reveal 0.6s ease forwards;
+}
+
+.title span:nth-child(1) { animation-delay: 0.8s; }
+.title span:nth-child(2) { animation-delay: 0.9s; }
+.title span:nth-child(3) { animation-delay: 0.1s; }
+.title span:nth-child(4) { animation-delay: 1.0s; }
+.title span:nth-child(6) { animation-delay: 1.1s; }
+.title span:nth-child(7) { animation-delay: 0.3s; }
+.title span:nth-child(8) { animation-delay: 1.2s; }
+.title span:nth-child(9) { animation-delay: 1.3s; }
+
+.subtitle {
+  margin-top: 25px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,0.8);
+  opacity: 0;
+  animation: fadeSub 1s ease forwards;
+  animation-delay: 1.2s;
+  letter-spacing: 2px;
+}
+  
+@keyframes reveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeSub {
+  to {
+    opacity: 1;
+  }
+}  
+
+.controls {
+  margin-top: -10px;
+  display: flex;
+  gap: 10px;
+}
+
+.controls button {
+  background: black;
+  color: white;
+  border: 1px solid white;
+  padding: 12px 16px;
+  font-size: 18px;
+  border-radius: 10px;
+}
+
+ #mindMessage{
+  position:absolute;
+  top:45%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  color:white;
+  font-family:'Press Start 2P', monospace;
+  font-size:12px;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 1.5s;
+} 
+</style>
+</head>
+
+<body>
+<div id="introScreen">
+  <div class="title">
+    <span>W</span><span>o</span><span>®</span><span>d</span>
+    <span class="space"></span>
+    <span>f</span><span>@</span><span>l</span><span>l</span>
+  </div>
+  <div class="subtitle">GAME</div>
+</div>
+<div class="game">
+  <div class="hint">
+  <span id="wordHint" onclick="revealHint()" style="cursor:pointer;">Hint</span>
+</div>
+  <canvas id="wordFallCanvas" width="300" height="600"></canvas>
+<div id="mindMessage"></div>
+<div id="roundDisplay" style="
+    position: relative;
+    top: 65px;        /* + Wert = runter | - Wert = hoch */
+    color: white;
+    font-family: monospace;
+    font-size: 12px;
+    text-align: center;
+">
+  0/10
+</div>
+  
+  <div class="controls">
+    <button onclick="startGame()">START</button>
+    <button onclick="move(-1)">◀</button>
+    <button onclick="dropFast()">▼</button>
+    <button onclick="move(1)">▶</button>
+    <button onclick="restartGame()">RESET</button>
+  </div>
+</div>
+
+<script>
+
+  /*
+
+    Word Fall: Illusion
+
+    Built by Gëzim Hasani
+
+    Dedicated to
+
+    Fadil Hasani
+
+    A father never truly leaves
+
+    what he helped build.
+
+  */  
+
+// ===== DOUBLE TAP ZOOM KILLER =====
+let lastTouchEnd = 0;
+document.addEventListener('touchend', e => {
+  const now = Date.now();
+  if (now - lastTouchEnd <= 300) e.preventDefault();
+  lastTouchEnd = now;
+}, { passive: false });
+
+/* ===== CANVAS ===== */
+const canvas = document.getElementById('wordFallCanvas');
+const ctx = canvas.getContext('2d');
+ctx.scale(30, 30);
+
+// ===== NEXT ROUND FUTURISTIC TONE =====
+let audioCtx = null;
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function playNextRoundTone() {
+  if (!audioCtx) return;
+
+  const now = audioCtx.currentTime;
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  const filter = audioCtx.createBiquadFilter();
+
+  // Clean digital sound
+  osc.type = "triangle";
+
+  // Leichter futuristischer Aufstieg
+  osc.frequency.setValueAtTime(420, now);
+  osc.frequency.linearRampToValueAtTime(620, now + 0.18);
+
+  // Subtiler Highpass für digitalen Charakter
+  filter.type = "highpass";
+  filter.frequency.setValueAtTime(900, now);
+
+  // Sehr leise und kurz
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.04, now + 0.05);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start(now);
+  osc.stop(now + 0.22);
+}
+  
+/* ===== DICTIONARY ===== */
+const WORDS = [
+  // Deine alten 10-Buchstaben-Wörter
+  'ABOMINABLE', 'REPOSITORY', 'CROSSBREED', 'DISASTROUS',
+  'EVERYTHING', 'FASCINATOR', 'REFRESHING', 'HEARTBEATS',
+  'IMMEDIATES', 'JOURNALISM', 'KNIGHTHOOD', 'LANDSCAPER',
+  'MASTERMIND', 'NIGHTSTAND', 'OPERATIONS', 'POPULATION',
+  'RENDEZVOUS', 'SCRATCHING', 'LEGENDARYS',
+  'UNDERTAKER', 'VOLUNTEERS', 'WATERMELON', 'XENOPHOBIC',
+  'YELLOWHAZE', 'ZOOLOGISTS',
+
+  // Neue 8-Buchstaben-Wörter
+  'DYNAMICS', 'ECLIPSES', 'FIREWALL', 'HORIZONS', 'JOURNEYS',
+  'KEYSTONE', 'LANDMARK', 'MOUNTAIN', 'NOTEBOOK', 'OBELISKS',
+
+  // Neue 6-Buchstaben-Wörter
+  'PUZZLE', 'ORACLE', 'SYSTEM', 'PLAYER', 'TARGET', 'BINARY',
+  'MODULE', 'VECTOR', 'RANDOM', 'CODING',
+
+  // Neue 4-Buchstaben-Wörter
+  'WORD', 'GAME', 'PLAY', 'TEST', 'DATA', 'NODE', 'LINK',
+  'TASK', 'FLOW', 'CODE'
+];
+const MIN_LEN = 4;
+const COLORS = ['#ffffff'];
+let wordQueue = [];
+let wordIndex = 0;
+
+function shuffleWords() {
+  wordQueue = [...WORDS].sort(() => Math.random() - 0.5);
+  wordIndex = 0;
+}
+
+/* ===== ARENA ===== */
+const arena = Array.from({ length: 20 }, () => Array(10).fill(null));
+const highlights = Array.from({ length: 20 }, () => Array(10).fill(null));
+
+const player = { pos: { x: 0, y: 0 }, letter: '' };
+let targetWord = '';
+let gameRunning = false;
+let hintRevealed = false;
+let revealTimeout = null;
+// 🔲 FRAME POSITION (GLOBAL)
+let frameX = 0;
+let frameY = 0;
+let frameH = 10; // Höhe fix
+// 🟫 FAKE FRAMES SYSTEM
+let round = 1;
+const maxRounds = 10;
+function updateRoundDisplay() {
+  const display = document.getElementById('roundDisplay');
+  if(display) display.textContent = round + '/' + maxRounds;
+}
+let fakeFrames = [];
+let pulseActive = false;
+let fakePulseTriggered = false;
+let fakePulseTimeout = null;
+let fakePulseActive = false;
+let fakePulseTime = 0;
+let colorShiftTimeout = null;
+let colorShiftFakeTriggered = false;
+let colorShiftIllusionTriggered = false;
+let pulseTime = 0;
+let pulseDuration = 300; // Millisekunden
+let framesInvisible = false;
+let hintDisabled = false; // Hint in Runde 4 deaktivieren
+let mindMessageShown = false;
+let round4InvisibleY = null;
+// 🎨 Farben für Original Rahmen (deine bestehenden Farben benutzen)
+const originalFrameColors = [
+  '#ffffff',  // 1  Rot
+  '#ff8c00',  // 2  Orange
+  '#ffd700',  // 3  Gold
+  '#ffff00',  // 4  Gelb
+  '#bfff00',  // 5  Gelbgrün
+  '#00ff00',  // 6  Grün
+  '#00ff7f',  // 7  Spring Green
+  '#00ffaa',  // 8  Mint
+  '#00ffff',  // 9  Cyan
+  '#00bfff',  // 10 Himmelblau
+  '#0080ff',  // 11 Blau
+  '#0000ff',  // 12 Stark Blau
+  '#4b00ff',  // 13 Indigo
+  '#8000ff',  // 14 Violett
+  '#bf00ff',  // 15 Lila
+  '#ff00ff',  // 16 Magenta
+  '#ff00aa',  // 17 Pink
+  '#ff0066',  // 18 Hot Pink
+  '#ff1493',  // 19 Deep Pink
+  '#ff4500',  // 20 Rot-Orange
+  '#ff6347',  // 21 Tomato
+  '#ffa500',  // 22 Orange Classic
+  '#adff2f',  // 23 Green Yellow
+  '#7fff00',  // 24 Chartreuse
+  '#40e0d0',  // 25 Turquoise
+  '#1e90ff',  // 26 Dodger Blue
+  '#6a5acd',  // 27 Slate Blue
+  '#9932cc',  // 28 Dark Orchid
+  '#ff69b4',  // 29 Pink Soft
+  '#ffffff'   // 30 Weiß (Final Flash)
+];
+// 🎨 aktuelle Farbe des Original-Rahmens
+let frameColor = originalFrameColors[round - 1];
+
+const fakeFrameColors = [
+  '#ffffff',  // 30
+  '#ff69b4',  // 29
+  '#9932cc',  // 28
+  '#6a5acd',  // 27
+  '#1e90ff',  // 26
+  '#40e0d0',  // 25
+  '#7fff00',  // 24
+  '#adff2f',  // 23 
+  '#ffa500',  // 22
+  '#ff6347',  // 21
+  '#ff4500',  // 20
+  '#ff1493',  // 19
+  '#ff0066',  // 18
+  '#ff00aa',  // 17
+  '#ff00ff',  // 16
+  '#bf00ff',  // 15
+  '#8000ff',  // 14
+  '#4b00ff',  // 13
+  '#0000ff',  // 12
+  '#0080ff',  // 11
+  '#00bfff',  // 10
+  '#00ffff',  // 9
+  '#00ffaa',  // 8
+  '#00ff7f',  // 7
+  '#00ff00',  // 6
+  '#bfff00',  // 5
+  '#ffff00',  // 4
+  '#ffd700',  // 3
+  '#ff8c00',  // 2
+  '#ff3b3b'   // 1
+]; 
+
+let shuffledFrameColors = [];
+let colorIndex = 0;
+
+function shuffleFrameColors() {
+  shuffledFrameColors = [...fakeFrameColors].sort(() => Math.random() - 0.5);
+  colorIndex = 0;
+}
+  
+function newTargetWord() {
+  if (wordQueue.length === 0 || wordIndex >= wordQueue.length) shuffleWords();
+
+  targetWord = wordQueue[wordIndex++];
+
+  // 🔹 Rahmenhöhe automatisch an Wortlänge anpassen
+  frameH = targetWord.length < 10 ? targetWord.length : 10;
+
+// Hint in Runde 4 deaktivieren
+hintDisabled = (round === 4);
+  
+  if(!hintRevealed){
+    document.getElementById('wordHint').textContent =
+      getMaskedWord(targetWord, round);
+  }
+
+  randomizeFrame();
+  generateFakeFrames();
+  // Alten Timer stoppen
+  if(colorShiftTimeout){
+    clearTimeout(colorShiftTimeout);
+  }
+
+  // Flag zurücksetzen
+  colorShiftIllusionTriggered = false;
+
+  // Neuen Timer speichern
+  colorShiftTimeout = setTimeout(() => {
+    triggerColorShiftIllusion();
+  }, 5000);
+}
+
+function getMaskedWord(word, round){
+
+  if(round <= 1) return word;
+
+  let letters = word.split('');
+  let hideCount = Math.min(round - 1, letters.length - 2);
+
+  let indexes = [];
+
+  while(indexes.length < hideCount){
+    let i = Math.floor(Math.random() * letters.length);
+    if(!indexes.includes(i)){
+      indexes.push(i);
+    }
+  }
+
+  indexes.forEach(i=>{
+    letters[i] = '_';
+  });
+
+  return letters.join('');
+}
+
+// 🔹 Fake-Hint aus WORDS-Liste, gleiche Länge wie targetWord
+function getFakeWord(originalWord) {
+  const len = originalWord.length;
+  const candidates = WORDS.filter(w => w.length === len && w.toUpperCase() !== originalWord.toUpperCase());
+  if(candidates.length === 0) return originalWord; // Fallback
+  const index = Math.floor(Math.random() * candidates.length);
+  return candidates[index].toUpperCase();
+}
+
+function revealHint(){
+  if(hintDisabled) return;
+  if(hintRevealed) return;
+
+  hintRevealed = true;
+  const hintEl = document.getElementById('wordHint');
+
+  if(round === 9){
+    // 🎭 Fake Hint zuerst
+    const fakeWord = getFakeWord(targetWord);
+    hintEl.textContent = fakeWord;
+
+    setTimeout(() => {
+      // Original-Wort zeigen
+      hintEl.textContent = targetWord;
+
+      setTimeout(() => {
+        // Wieder maskieren
+        hintEl.textContent = getMaskedWord(targetWord, round);
+        hintRevealed = false;
+      }, 2000);
+
+    }, 2000);
+
+  } else {
+    // Normale Runde
+    hintEl.textContent = targetWord;
+    revealTimeout = setTimeout(() => {
+      hintEl.textContent = getMaskedWord(targetWord, round);
+      hintRevealed = false;
+    }, 2000);
+  }
+}
+function randomizeFrame() {
+  frameX = Math.floor(Math.random() * arena[0].length);
+  const minY = 5;
+  const maxY = arena.length - frameH;
+  frameY = Math.floor(Math.random() * (maxY - minY)) + minY;
+}
+
+function generateFakeFrames() {
+  fakeFrames = [];
+  let fakeCount = round - 1;
+  let availableColors = [...COLORS];
+
+  for(let i=0;i<fakeCount;i++){
+    let fx, fy;
+    let valid = false;
+
+    let attempts = 0;
+    let maxAttempts = 200;
+    
+    while(!valid && attempts < maxAttempts){
+    attempts++;
+      
+      fx = Math.floor(Math.random() * arena[0].length);
+      const minY = 5;
+      const maxY = arena.length - frameH;
+      fy = Math.floor(Math.random() * (maxY - minY)) + minY;
+
+      const overlapsOriginal =
+        fx === frameX &&
+        fy < frameY + frameH &&
+        fy + frameH > frameY;
+
+      const overlapsFake = fakeFrames.some(f =>
+        f.x === fx &&
+        fy < f.y + frameH &&
+        fy + frameH > f.y
+      );
+
+      if(!overlapsOriginal && !overlapsFake){
+        valid = true;
+      }
+    }
+
+    if(!valid) continue;   // 🔥 DAS FEHLT BEI DIR
+    // Zufällige Farbe auswählen
+    let color = shuffledFrameColors[colorIndex];
+    colorIndex++;
+
+   if(colorIndex >= shuffledFrameColors.length){
+  shuffleFrameColors();
+ colorIndex = 0;
+}
+
+    fakeFrames.push({x: fx, y: fy, color: color});
+  }
+}
+  
+function triggerColorShift(){
+
+  if(round <= 1) return;
+  if(colorShiftFakeTriggered) return;
+
+  colorShiftFakeTriggered = true;
+
+  const colors = fakeFrames.map(f => f.color);
+
+  for(let i = colors.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [colors[i], colors[j]] = [colors[j], colors[i]];
+  }
+
+  fakeFrames.forEach((f, index)=>{
+    f.color = colors[index];
+  });
+
+}
+
+function triggerColorShiftIllusion(){
+
+  if(round <= 1) return;
+  if(colorShiftIllusionTriggered) return;
+  colorShiftIllusionTriggered = true;
+
+  const allFrames = [
+    ...fakeFrames,
+    {x: frameX, y: frameY, isOriginal:true, color: frameColor}
+  ];
+
+  let colors = allFrames.map(f => f.color);
+
+  if(colors.length <= 1) return;
+
+  // 🔥 Rotation statt Endlos-Shuffle
+  let shift = Math.floor(Math.random() * (colors.length - 1)) + 1;
+
+  colors = colors
+    .slice(shift)
+    .concat(colors.slice(0, shift));
+
+  // Farben anwenden
+  allFrames.forEach((f,i)=>{
+    if(f.isOriginal){
+      frameColor = colors[i];
+    } else {
+      f.color = colors[i];
+    }
+  });
+}
+
+ function triggerFakeFramePulse() {
+
+  if(round !== 2 && round !== 5) return;
+  if(fakePulseTriggered) return;
+  if(fakeFrames.length === 0) return;
+
+  fakePulseTriggered = true;
+
+  fakePulseTimeout = setTimeout(() => {
+
+    fakePulseActive = true;
+    fakePulseTime = 0;
+
+  }, 6000);
+}
+  
+function triggerOriginalFramePulse() {
+
+  if(round !== 3 && round !== 5) return;
+
+  setTimeout(() => {
+    pulseActive = true;
+    pulseTime = 0;
+  }, 6000);
+
+}  
+  /* ===== GAME LOGIC ===== */
+function collide(arena, player) {
+  const { x, y } = player.pos;
+  return y >= arena.length || x < 0 || x >= arena[0].length || arena[y][x] !== null;
+}
+
+function merge(arena, player) { 
+  arena[player.pos.y][player.pos.x] = player.letter; 
+
+  // Runde 4 Trick
+  if(round === 4){
+    const secondFromBottom = frameY + frameH - 2;
+
+    if(player.pos.x === frameX && player.pos.y === secondFromBottom){
+      round4InvisibleY = player.pos.y;
+    }
+  }
+}
+function move(dir) { player.pos.x += dir; if(collide(arena, player)) player.pos.x -= dir; }
+function drop() { 
+  if(!gameRunning) return;
+  player.pos.y++;
+  if(collide(arena,player)){ player.pos.y--; merge(arena,player); checkAndClearWords(); clearDiagonalSixByColor(); resetPlayer(); }
+}
+
+/* ===== WORD DETECTION ===== */
+function checkAndClearWords() {
+  clearHighlights();
+  const found = findWords();
+  if(!found.length) return;
+  let targetFound = false;
+  let fakeFrameHit = false;
+  
+  found.forEach(group=>{
+    const letters = group.map(([y,x])=>arena[y][x]).join('');
+if(letters.toUpperCase() === targetWord){
+
+  const inOriginalFrame = group.every(([y,x])=> 
+    x===frameX && y>=frameY && y<frameY+frameH
+  );
+
+  const inFakeFrame = fakeFrames.some(f =>
+    group.every(([y,x]) =>
+      x===f.x && y>=f.y && y<f.y+frameH
+    )
+  );
+
+  if(round === 10){
+
+  // In Runde 10 darf das Wort NICHT im Rahmen sein
+  if(!inOriginalFrame && !inFakeFrame){
+    targetFound = true;
+  }
+
+}
+else if(round === 8){
+    // In Runde 8 ist nur der Fake Frame korrekt
+    if(inFakeFrame){
+        targetFound = true;       // Fake Frame = korrekt
+        // Optional: eigener Ton
+        // playFakeFrameTone(); 
+    }
+    // Original Frame ignorieren
+} else {
+    if(inOriginalFrame){
+        targetFound = true;
+    }
+
+    if(inFakeFrame && round === 7){
+        fakeFrameHit = true;
+    }
+  }
+}   
+    const color = COLORS[Math.floor(Math.random()*COLORS.length)];
+    group.forEach(([y,x])=>highlights[y][x]=color);
+  });
+
+  setTimeout(()=>{
+  if(fakeFrameHit){
+
+  // Runde zurück
+  round = 6;
+  updateRoundDisplay();
+
+  // Spielfeld reset
+  arena.forEach(r => r.fill(null));
+  clearHighlights();
+
+  // Spieler reset
+  resetPlayer();
+
+  // Rahmenfarbe zurücksetzen
+  frameColor = originalFrameColors[round - 1];
+
+  // Neue Frames erzeugen
+  fakeFrames = [];
+
+  // Neues Wort starten (macht auch neue Frames)
+  newTargetWord();
+
+  return;
+}
+  if(targetFound){
+
+  framesInvisible = false; // 🔧 Reset damit neue Runde wieder sichtbar ist
+      
+  playNextRoundTone(); // 👈 HIER
+  // Spielfeld leeren
+  arena.forEach(r=>r.fill(null));
+  clearHighlights();
+  resetPlayer();
+
+  // Runde erhöhen (max 9)
+  round++;
+   mindMessageShown = false;
+    if(round > maxRounds){
+  round = 1;
+}
+ 
+  updateRoundDisplay();
+    // Runde 6 Spezialeffekt
+if(round === 6){
+  setTimeout(()=>{
+    framesInvisible = true;
+   },6000);
+ }
+    colorShiftFakeTriggered = false;
+    colorShiftIllusionTriggered = false;
+  // Original-Farbe für den aktuellen Frame aktualisieren
+    frameColor = originalFrameColors[round - 1] || '#00ff00';
+  // 🧠 Geschwindigkeit pro Runde erhöhen
+    dropInterval = Math.max(200, 700 - (round * 60));
+  // Pulse nur ab Runde 2
+if(round > 1){
+  pulseActive = true;
+  pulseTime = 0;
+}
+  // Neues Wort erzeugt auch neuen Original Frame
+  newTargetWord();
+// Fake Frames neu erzeugen
+fakeFrames = [];
+let fakeCount = round - 1;
+
+// Array mit verfügbaren Farben kopieren
+let availableColors = [...COLORS];
+
+for(let i=0;i<fakeCount;i++){
+  let fx, fy;
+  let valid = false;
+
+  let attempts = 0;
+  let maxAttempts = 200;
+  
+  while(!valid && attempts < maxAttempts){
+  attempts++;
+    
+    fx = Math.floor(Math.random() * arena[0].length);
+    const minY = 5;
+    const maxY = arena.length - frameH;
+    fy = Math.floor(Math.random() * (maxY - minY)) + minY;
+
+    const overlapsOriginal =
+  fx === frameX &&
+  fy < frameY + frameH &&
+  fy + frameH > frameY;
+
+const overlapsFake = fakeFrames.some(f =>
+  f.x === fx &&
+  fy < f.y + frameH &&
+  fy + frameH > f.y
+);
+
+    if(!overlapsOriginal && !overlapsFake){
+      valid = true;
+    }
+  }
+
+  if(!valid) continue;   // 🔥 DAS FEHLT BEI DIR
+  // Zufällige Farbe auswählen und aus availableColors entfernen
+  let color = shuffledFrameColors[colorIndex];
+  colorIndex++;
+
+  if(colorIndex >= shuffledFrameColors.length){
+  shuffleFrameColors();
+}
+  fakeFrames.push({x: fx, y: fy, color: color});
+}
+fakePulseTriggered = false;
+ triggerFakeFramePulse();
+  triggerOriginalFramePulse();
+  return;
+}
+    found.flat().forEach(([y,x])=>arena[y][x]=null);
+    applyGravity();
+    clearHighlights();
+  },300);
+}
+
+function findWords(){
+  const found=[];
+  for(let y=0;y<arena.length;y++){
+    let word='', pos=[];
+    for(let x=0;x<=arena[0].length;x++){
+      const c = arena[y][x];
+      if(c){ word+=c; pos.push([y,x]); } else { extract(word,pos,found); word=''; pos=[]; }
+    }
+  }
+  for(let x=0;x<arena[0].length;x++){
+    let word='', pos=[];
+    for(let y=0;y<=arena.length;y++){
+      const c = arena[y]?.[x];
+      if(c){ word+=c; pos.push([y,x]); } else { extract(word,pos,found); word=''; pos=[]; }
+    }
+  }
+  return found;
+}
+
+function extract(word,pos,found){
+  if(word.length<MIN_LEN) return;
+  const upperWord = word.toUpperCase();
+  WORDS.forEach(w=>{ const i=upperWord.indexOf(w); if(i!==-1) found.push(pos.slice(i,i+w.length)); });
+}
+
+function clearDiagonalSixByColor(){
+  const toClear=[];
+  for(let y=arena.length-1;y>=0;y--){
+    for(let x=0;x<arena[0].length;x++){
+      if(!arena[y][x]) continue;
+      const baseColor = COLORS[(x+y)%COLORS.length];
+      const chain=[[y,x]];
+      let ny=y-1,nx=x+1;
+      while(ny>=0 && nx<arena[0].length && arena[ny][nx] && COLORS[(nx+ny)%COLORS.length]===baseColor){
+        chain.push([ny,nx]);
+        ny--; nx++;
+      }
+      if(chain.length>=4) chain.forEach(p=>toClear.push(p));
+    }
+  }
+  if(!toClear.length) return;
+  toClear.forEach(([y,x])=>highlights[y][x]='#ff3333');
+  setTimeout(()=>{ toClear.forEach(([y,x])=>arena[y][x]=null); applyGravity(); clearHighlights(); },250);
+}
+
+/* ===== GRAVITY ===== */
+function applyGravity(){
+  for(let x=0;x<arena[0].length;x++){
+    for(let y=arena.length-1;y>=0;y--){
+      if(arena[y][x]===null){
+        for(let k=y-1;k>=0;k--){
+          if(arena[k][x]!==null){ arena[y][x]=arena[k][x]; arena[k][x]=null; break; }
+        }
+      }
+    }
+  }
+}
+
+/* ===== PLAYER ===== */
+function randomLetter(){ return String.fromCharCode(65+Math.floor(Math.random()*26)); }
+
+function resetPlayer(){
+  player.letter = randomLetter();
+  player.pos.y = 0;
+  player.pos.x = Math.floor(arena[0].length/2);
+  if(collide(arena,player)) arena.forEach(r=>r.fill(null));
+}
+
+/* ===== FALLING LETTERS PREVIEW ===== */
+function startFallingLettersPreview() {
+  const letters = [];
+  const columns = arena[0].length;
+  const rows = Math.floor(arena.length/2); // Bis Mitte füllen
+  const colors = COLORS;
+
+  // Initial viele Buchstaben generieren
+  for(let x=0; x<columns; x++) {
+    for(let y=0; y<rows; y++) {
+      letters.push({
+        x: x,
+        y: -Math.random()*rows, // Start oberhalb
+        letter: String.fromCharCode(65 + Math.floor(Math.random()*26)),
+        color: colors[Math.floor(Math.random()*colors.length)],
+        speed: 0.05 + Math.random()*0.15,
+        scale: 1 + Math.random()*0.5
+      });
+    }
+  }
+
+  function animFrame() {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    letters.forEach(l=>{
+      // Swollen Pop-Effekt
+      const scale = 1 + 0.3 * Math.sin(Date.now()*0.005 + l.x);
+      ctx.save();
+      ctx.translate(l.x+0.5, l.y+0.5);
+      ctx.scale(scale, scale);
+      ctx.fillStyle = l.color;
+      ctx.font='1px monospace';
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText(l.letter,0,0);
+      ctx.restore();
+
+      // Fallen
+      l.y += l.speed;
+
+      // Unten auf Grid anhalten
+      if(l.y >= arena.length/1) l.y = arena.length/1;
+    });
+
+    window.previewAnim = requestAnimationFrame(animFrame);
+  }
+  animFrame();
+}
+/* ===== DRAW ===== */
+function clearHighlights(){ highlights.forEach(r=>r.fill(null)); }
+
+function draw(){
+  ctx.fillStyle='#000'; 
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.font='1px monospace'; 
+  ctx.textAlign='center'; 
+  ctx.textBaseline='middle';
+
+if(gameRunning){
+
+// 🟩 ORIGINAL FRAME MIT SAFE PULSE
+
+let borderWidth = 0.05;
+let alpha = 1;
+
+if(pulseActive){
+
+  pulseTime += 16;
+  let progress = pulseTime / pulseDuration;
+
+  if(progress >= 1){
+    pulseActive = false;
+  } else {
+    // Pulse Effekt
+    borderWidth = 0.05 + Math.sin(progress * Math.PI) * 0.08;  // leichter
+    alpha = 1 + Math.sin(progress * Math.PI) * 0.5;           // weniger hell
+  }
+}
+
+// Hintergrund nur wenn sichtbar
+// Farbe zuerst definieren
+let currentColor = frameColor || '#00ff00';
+
+// Nur zeichnen wenn sichtbar
+if(!framesInvisible){
+
+  // Hintergrund
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(frameX+0.05, frameY-0.27, 0.9, frameH-0.2);
+
+  // Rahmen
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = currentColor;
+  ctx.lineWidth = borderWidth;
+  ctx.strokeRect(frameX+0.05, frameY-0.27, 0.9, frameH-0.2);
+  ctx.globalAlpha = 1;
+
+
+}
+
+
+// 🟫 FAKE FRAMES
+if(!framesInvisible){
+  fakeFrames.forEach(f=>{
+    let borderWidth = 0.05;
+    let alpha = 1;
+
+    if(fakePulseActive){
+      fakePulseTime += 16;
+      let progress = fakePulseTime / pulseDuration;
+
+      if(progress >= 1){
+        fakePulseActive = false;
+      } else {
+        borderWidth = 0.05 + Math.sin(progress * Math.PI) * 0.08;
+        alpha = 1 + Math.sin(progress * Math.PI) * 0.5;
+      }
+    }
+
+    ctx.fillStyle='#000000';
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = f.color || '#00ff00';
+    ctx.lineWidth = borderWidth;
+    ctx.fillRect(f.x+0.05, f.y-0.27, 0.9, frameH-0.2);
+    ctx.strokeRect(f.x+0.05, f.y-0.27, 0.9, frameH-0.2);
+    ctx.globalAlpha = 1;
+  });
+}
+
+arena.forEach((row,y)=>{
+  row.forEach((v,x)=>{
+    if(v){ 
+
+      // Runde 4 Buchstabe unsichtbar
+      if(round === 4 && x === frameX && y === round4InvisibleY){
+        return;
+      }
+
+      ctx.fillStyle = highlights[y][x]||COLORS[(x+y)%COLORS.length]; 
+      ctx.fillText(v,x+0.5,y+0.5); 
+    }
+  });
+});
+
+  ctx.fillStyle=COLORS[(player.pos.x+player.pos.y)%COLORS.length];
+  ctx.fillText(player.letter,player.pos.x+0.5,player.pos.y+0.5);
+}
+}
+/* ===== LOOP ===== */
+let lastTime=0, dropCounter=0, dropInterval=700;
+function update(time=0){
+  const delta = time - lastTime;
+  lastTime=time;
+  if(gameRunning){
+    dropCounter+=delta;
+    if(dropCounter>dropInterval){ drop(); dropCounter=0; }
+  }
+  draw();
+  requestAnimationFrame(update);
+}
+
+/* ===== INPUT ===== */
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft') move(-1);
+  if(e.key==='ArrowRight') move(1);
+  if(e.key==='ArrowDown') drop();
+});
+
+/* ===== BUTTONS ===== */
+function startGame() {
+  // Stoppt die Falling Letters Preview, falls noch aktiv
+  initAudio(); // 👈 HIER
+  
+  if(window.previewAnim){
+    cancelAnimationFrame(window.previewAnim);
+    window.previewAnim = null;
+  }
+  // Startet das Spiel
+  if(!gameRunning){
+    
+    shuffleFrameColors();   // 👈 HIER EINFÜGEN
+    colorIndex = 0;
+    
+    gameRunning = true;
+    resetPlayer();
+    //round = 10;  fur test ( game )
+    newTargetWord();
+    updateRoundDisplay(); // ← Anzeige direkt updaten
+  }
+}
+
+function restartGame(){ arena.forEach(r=>r.fill(null)); clearHighlights(); resetPlayer(); shuffleFrameColors(); colorIndex = 0; newTargetWord(); generateFakeFrames(); dropCounter=0; gameRunning=true; }
+function dropFast(){ if(!gameRunning) return; while(!collide(arena,player)){ player.pos.y++; } player.pos.y--; merge(arena,player); checkAndClearWords(); clearDiagonalSixByColor(); resetPlayer(); }
+
+/* ===== INIT ===== */
+// Intro fade out + start falling letters
+setTimeout(()=>{
+  const intro=document.getElementById('introScreen');
+  intro.style.opacity='0';
+  setTimeout(()=>{
+    intro.style.display='none';
+    startFallingLettersPreview();
+  },800);
+},5000);
+
+if(wordQueue.length===0) shuffleWords();
+
+const messages = [
+  "ARE YOU SURE?",
+  "LOOK AGAIN",
+  "TRUST NOTHING"
+];
+
+setInterval(()=>{
+
+  if(round === 6 && !mindMessageShown){
+
+    const msg = document.getElementById("mindMessage");
+
+    const randomText = messages[Math.floor(Math.random()*messages.length)];
+
+    msg.textContent = randomText;
+
+    msg.style.opacity = 1;
+
+    setTimeout(()=>{
+      msg.style.opacity = 0;
+    },2500);
+
+    mindMessageShown = true;
+
+  }
+
+},120000);
+update();
+</script>
+</body>
+</html>
