@@ -1206,6 +1206,7 @@ function restartGame() {
   resetRound5Void();
 
   round = 1;
+  frameColor = originalFrameColors[0];
   mindMessageShown = false;
   framesInvisible = false;
   hintDisabled = false;
@@ -1236,8 +1237,6 @@ function restartGame() {
   updateRoundDisplay();
 }
 
-
-function restartGame(){ arena.forEach(r=>r.fill(null)); clearHighlights(); resetPlayer(); shuffleFrameColors(); colorIndex = 0; newTargetWord(); generateFakeFrames(); dropCounter=0; gameRunning=true; }
 function dropFast(){ if(!gameRunning) return; while(!collide(arena,player)){ player.pos.y++; } player.pos.y--; merge(arena,player); checkAndClearWords(); clearDiagonalSixByColor(); resetPlayer(); }
 
 /* ===== INIT ===== */
