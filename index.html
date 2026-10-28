@@ -482,7 +482,7 @@ const fakeFrameColors = [
   //'#ffd700',  // 3
   //'#ff8c00',  // 2
   //'#ff3b3b'   // 1
-];
+]; 
 
 let shuffledFrameColors = [];
 let colorIndex = 0;
@@ -1094,7 +1094,7 @@ if(!framesInvisible){
 
   // Rahmen
   ctx.globalAlpha = alpha;
-  ctx.strokeStyle = '#ffffff';
+  ctx.strokeStyle = currentColor;
   ctx.lineWidth = borderWidth;
   ctx.strokeRect(frameX+0.05, frameY-0.27, 0.9, frameH-0.2);
   ctx.globalAlpha = 1;
@@ -1123,7 +1123,7 @@ if(!framesInvisible){
 
     ctx.fillStyle='#000000';
     ctx.globalAlpha = alpha;
-    ctx.strokeStyle = '#ffffff';
+    ctx.strokeStyle = f.color || '#00ff00';
     ctx.lineWidth = borderWidth;
     ctx.fillRect(f.x+0.05, f.y-0.27, 0.9, frameH-0.2);
     ctx.strokeRect(f.x+0.05, f.y-0.27, 0.9, frameH-0.2);
