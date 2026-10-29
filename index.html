@@ -1002,54 +1002,159 @@ function resetPlayer(){
 }
 
 /* ===== FALLING LETTERS PREVIEW ===== */
-function startFallingLettersPreview() {
-  const letters = [];
-  const columns = arena[0].length;
-  const rows = Math.floor(arena.length/2); // Bis Mitte füllen
-  const colors = COLORS;
 
-  // Initial viele Buchstaben generieren
-  for(let x=0; x<columns; x++) {
-    for(let y=0; y<rows; y++) {
-      letters.push({
-        x: x,
-        y: -Math.random()*rows, // Start oberhalb
-        letter: String.fromCharCode(65 + Math.floor(Math.random()*26)),
-        color: colors[Math.floor(Math.random()*colors.length)],
-        speed: 0.05 + Math.random()*0.15,
-        scale: 1 + Math.random()*0.5
+/* ===== FALLING INTRO TEXT PREVIEW ===== */
+function startFallingLettersPreview() {
+  const oldOverlay = document.getElementById('introPreviewOverlay');
+  if (oldOverlay) oldOverlay.remove();
+
+  const rect = canvas.getBoundingClientRect();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'introPreviewOverlay';
+
+  Object.assign(overlay.style, {
+    position: 'fixed',
+    left: rect.left + 'px',
+    top: rect.top + 'px',
+    width: rect.width + 'px',
+    height: rect.height + 'px',
+    background: '#000',
+    color: '#fff',
+    overflow: 'hidden',
+    zIndex: '10',
+    fontFamily: 'monospace',
+    boxSizing: 'border-box'
+  });
+
+  document.body.appendChild(overlay);
+
+  const lines = [
+    'Not everything is',
+    'what it seems.',
+    '',
+    'Word Fall is more than',
+    'a word game.',
+    'It is a challenge of',
+    'attention, perception,',
+    'and concentration.',
+    '',
+    'Letters fall. Words appear.',
+    'Frames compete for',
+    'your attention.',
+    'What seems obvious may',
+    'not be correct, and what',
+    'looks familiar may deceive you.',
+    '',
+    'With every round,',
+    'the challenge changes.',
+    'Your eyes search for patterns,',
+    'your mind looks for answers,',
+    'and your confidence is',
+    'put to the test.',
+    '',
+    'There is no guarantee',
+    'that what you see is',
+    'what you think it is.',
+    '',
+    'Observe carefully.',
+    'Think clearly.',
+    'Trust your perception',
+    '— but question it.',
+    '',
+    'Can you see beyond',
+    'the illusion?',
+    '',
+    'Built by Gëzim Hasani'
+  ];
+
+  const fontSize = Math.max(7, Math.min(9, rect.width / 34));
+  const lineHeight = fontSize * 1.45;
+  const totalHeight = lines.length * lineHeight;
+  const startY = Math.max(8, (rect.height - totalHeight) / 2);
+
+  const letters = [];
+
+  lines.forEach((line, row) => {
+    const lineWidth = line.length * fontSize * 0.6;
+    const startX = Math.max(4, (rect.width - lineWidth) / 2);
+
+    [...line].forEach((char, col) => {
+      if (char === ' ') return;
+
+      const span = document.createElement('span');
+      span.textContent = char;
+
+      Object.assign(span.style, {
+        position: 'absolute',
+        left: (startX + col * fontSize * 0.6) + 'px',
+        top: '0px',
+        fontSize: fontSize + 'px',
+        lineHeight: lineHeight + 'px',
+        whiteSpace: 'pre',
+        opacity: '0'
       });
+
+      overlay.appendChild(span);
+
+      letters.push({
+        element: span,
+        targetY: startY + row * lineHeight,
+        y: -20 - Math.random() * rect.height,
+        speed: 160 + Math.random() * 180,
+        delay: Math.random() * 2
+      });
+    });
+  });
+
+  // Zufällige Reihenfolge der fallenden Buchstaben
+  letters.sort(() => Math.random() - 0.5);
+
+  let startTime = null;
+  let lastTime = null;
+
+  function animate(timestamp) {
+    if (!document.getElementById('introPreviewOverlay')) return;
+
+    if (startTime === null) startTime = timestamp;
+    if (lastTime === null) lastTime = timestamp;
+
+    const delta = Math.min((timestamp - lastTime) / 1000, 0.05);
+    const elapsed = (timestamp - startTime) / 1000;
+    lastTime = timestamp;
+
+    let allLanded = true;
+
+    letters.forEach(letter => {
+      if (elapsed < letter.delay) {
+        allLanded = false;
+        return;
+      }
+
+      if (letter.y < letter.targetY) {
+        letter.y = Math.min(
+          letter.targetY,
+          letter.y + letter.speed * delta
+        );
+      }
+
+      letter.element.style.top = letter.y + 'px';
+      letter.element.style.opacity = '1';
+
+      if (letter.y < letter.targetY) allLanded = false;
+    });
+
+    if (!allLanded) {
+      window.previewAnim = requestAnimationFrame(animate);
+    } else {
+      // Fertigen Introtext stehen lassen
+      window.previewAnim = null;
     }
   }
 
-  function animFrame() {
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-
-    letters.forEach(l=>{
-      // Swollen Pop-Effekt
-      const scale = 1 + 0.3 * Math.sin(Date.now()*0.005 + l.x);
-      ctx.save();
-      ctx.translate(l.x+0.5, l.y+0.5);
-      ctx.scale(scale, scale);
-      ctx.fillStyle = l.color;
-      ctx.font='1px monospace';
-      ctx.textAlign='center';
-      ctx.textBaseline='middle';
-      ctx.fillText(l.letter,0,0);
-      ctx.restore();
-
-      // Fallen
-      l.y += l.speed;
-
-      // Unten auf Grid anhalten
-      if(l.y >= arena.length/1) l.y = arena.length/1;
-    });
-
-    window.previewAnim = requestAnimationFrame(animFrame);
-  }
-  animFrame();
+  window.previewAnim = requestAnimationFrame(animate);
 }
+
 /* ===== DRAW ===== */
 function clearHighlights(){ highlights.forEach(r=>r.fill(null)); }
 
