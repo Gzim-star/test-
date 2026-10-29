@@ -1003,6 +1003,7 @@ function resetPlayer(){
 
 /* ===== FALLING LETTERS PREVIEW ===== */
 function startFallingLettersPreview() {
+  startFallingIntroText();
   const letters = [];
   const columns = arena[0].length;
   const rows = Math.floor(arena.length/2); // Bis Mitte füllen
@@ -1053,7 +1054,7 @@ function startFallingLettersPreview() {
 
 
 /* ===== FALLING INTRO TEXT PREVIEW ===== */
-function startFallingLettersPreview() {
+function startFallingIntroText() {
   const oldOverlay = document.getElementById('introPreviewOverlay');
   if (oldOverlay) oldOverlay.remove();
 
@@ -1068,7 +1069,7 @@ function startFallingLettersPreview() {
     top: rect.top + 'px',
     width: rect.width + 'px',
     height: rect.height + 'px',
-    background: '#000',
+    background: 'transparent',
     color: '#fff',
     overflow: 'hidden',
     zIndex: '10',
@@ -1194,10 +1195,10 @@ function startFallingLettersPreview() {
     });
 
     if (!allLanded) {
-      window.previewAnim = requestAnimationFrame(animate);
+      window.introTextAnim = requestAnimationFrame(animate);
     } else {
       // Fertigen Introtext stehen lassen
-      window.previewAnim = null;
+      window.introTextAnim = null;
     }
   }
 
