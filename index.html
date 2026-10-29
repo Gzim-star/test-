@@ -1052,29 +1052,7 @@ function startFallingLettersPreview() {
 }
 
  
-/* ===== FALLING INTRO TEXT PREVIEW ===== */
-function startFallingLettersPreview() {
-  const oldOverlay = document.getElementById('introPreviewOverlay');
-  if (oldOverlay) oldOverlay.remove();
 
-  const rect = canvas.getBoundingClientRect();
-
-  const overlay = document.createElement('div');
-  overlay.id = 'introPreviewOverlay';
-
-  Object.assign(overlay.style, {
-    position: 'fixed',
-    left: rect.left + 'px',
-    top: rect.top + 'px',
-    width: rect.width + 'px',
-    height: rect.height + 'px',
-    background: '#000',
-    color: '#fff',
-    overflow: 'hidden',
-    zIndex: '10',
-    fontFamily: 'monospace',
-    boxSizing: 'border-box'
-  });
 
   document.body.appendChild(overlay);
 
