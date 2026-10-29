@@ -1277,6 +1277,7 @@ document.addEventListener('keydown',e=>{
 
 /* ===== BUTTONS ===== */
 function startGame() {
+document.getElementById('introPreviewOverlay')?.remove();
   // Stoppt die Falling Letters Preview, falls noch aktiv
   initAudio(); // 👈 HIER
   
