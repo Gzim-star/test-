@@ -448,7 +448,7 @@ const originalFrameColors = [
   //'#ff69b4',  // 29 Pink Soft
   //'#ffffff'   // 30 Weiß (Final Flash)
 ];
-// 🎨 aktuelle Farbe des Original-Rahmens//
+// 🎨 aktuelle Farbe des Original-Rahmens
 let frameColor = originalFrameColors[round - 1];
 
 const fakeFrameColors = [
@@ -1002,6 +1002,55 @@ function resetPlayer(){
 }
 
 /* ===== FALLING LETTERS PREVIEW ===== */
+function startFallingLettersPreview() {
+  const letters = [];
+  const columns = arena[0].length;
+  const rows = Math.floor(arena.length/2); // Bis Mitte füllen
+  const colors = COLORS;
+
+  // Initial viele Buchstaben generieren
+  for(let x=0; x<columns; x++) {
+    for(let y=0; y<rows; y++) {
+      letters.push({
+        x: x,
+        y: -Math.random()*rows, // Start oberhalb
+        letter: String.fromCharCode(65 + Math.floor(Math.random()*26)),
+        color: colors[Math.floor(Math.random()*colors.length)],
+        speed: 0.05 + Math.random()*0.15,
+        scale: 1 + Math.random()*0.5
+      });
+    }
+  }
+
+  function animFrame() {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    letters.forEach(l=>{
+      // Swollen Pop-Effekt
+      const scale = 1 + 0.3 * Math.sin(Date.now()*0.005 + l.x);
+      ctx.save();
+      ctx.translate(l.x+0.5, l.y+0.5);
+      ctx.scale(scale, scale);
+      ctx.fillStyle = l.color;
+      ctx.font='1px monospace';
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText(l.letter,0,0);
+      ctx.restore();
+
+      // Fallen
+      l.y += l.speed;
+
+      // Unten auf Grid anhalten
+      if(l.y >= arena.length/1) l.y = arena.length/1;
+    });
+
+    window.previewAnim = requestAnimationFrame(animFrame);
+  }
+  animFrame();
+}
+
 
 /* ===== FALLING INTRO TEXT PREVIEW ===== */
 function startFallingLettersPreview() {
@@ -1030,28 +1079,46 @@ function startFallingLettersPreview() {
   document.body.appendChild(overlay);
 
   const lines = [
-    'Word Fall game',
-    'Is a challenge of',
-    'attention perception',
-    'and concentration',
+    'Not everything is',
+    'what it seems.',
     '',
-    'Letters fall Words appear',
-    'Frames compete for your attention',
+    'Word Fall is more than',
+    'a word game.',
+    'It is a challenge of',
+    'attention, perception,',
+    'and concentration.',
+    '',
+    'Letters fall. Words appear.',
+    'Frames compete for',
+    'your attention.',
     'What seems obvious may',
-    'not be correct and what',
-    'looks familiar may deceive you',
+    'not be correct, and what',
+    'looks familiar may deceive you.',
+    '',
+    'With every round,',
+    'the challenge changes.',
+    'Your eyes search for patterns,',
+    'your mind looks for answers,',
+    'and your confidence is',
+    'put to the test.',
     '',
     'There is no guarantee',
     'that what you see is',
-    'what you think it is',
+    'what you think it is.',
     '',
-    'Observe carefully',
-    'Think clearly',
+    'Observe carefully.',
+    'Think clearly.',
+    'Trust your perception',
+    '— but question it.',
     '',
+    'Can you see beyond',
+    'the illusion?',
+    '',
+    'Built by Gëzim Hasani'
   ];
 
-  const fontSize = Math.max(15, Math.min(15, rect.width / 24));
-  const lineHeight = fontSize * 1.50;
+  const fontSize = Math.max(7, Math.min(9, rect.width / 34));
+  const lineHeight = fontSize * 1.45;
   const totalHeight = lines.length * lineHeight;
   const startY = Math.max(8, (rect.height - totalHeight) / 2);
 
@@ -1259,6 +1326,11 @@ document.addEventListener('keydown',e=>{
 
 /* ===== BUTTONS ===== */
 function startGame() {
+  if (window.introTextAnim) {
+  cancelAnimationFrame(window.introTextAnim);
+  window.introTextAnim = null;
+}
+
 document.getElementById('introPreviewOverlay')?.remove();
   // Stoppt die Falling Letters Preview, falls noch aktiv
   initAudio(); // 👈 HIER
