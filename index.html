@@ -1078,7 +1078,21 @@ function startFallingIntroText() {
   });
 
   document.body.appendChild(overlay);
+// Canvas-Position und Größe bei Zoomänderungen aktualisieren
+function syncIntroOverlay() {
+  const rect = canvas.getBoundingClientRect();
 
+  overlay.style.left = rect.left + 'px';
+  overlay.style.top = rect.top + 'px';
+  overlay.style.width = rect.width + 'px';
+  overlay.style.height = rect.height + 'px';
+}
+  window.addEventListener('resize', syncIntroOverlay);
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', syncIntroOverlay);
+  window.visualViewport.addEventListener('scroll', syncIntroOverlay);
+}
   const lines = [
     'Not everything is',
     'what it seems.',
@@ -1202,7 +1216,7 @@ function startFallingIntroText() {
     }
   }
 
-  window.previewAnim = requestAnimationFrame(animate);
+  window.introTextAnim = requestAnimationFrame(animate);
 }
 
 /* ===== DRAW ===== */
