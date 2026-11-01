@@ -201,13 +201,8 @@ canvas {
   </div>
 </div>
 
-
-
 <script>
-alert("Der Browser führt JavaScript aus");
-</script>
 
-<script>
   /*
 
     Word Fall: Illusion
@@ -320,45 +315,6 @@ let frameH = 10; // Höhe fix
 // 🟫 FAKE FRAMES SYSTEM
 let round = 1;
 const maxRounds = 10;
-// ===== RANDOM ILLUSIONS SYSTEM =====
-
-const ILLUSIONS = [
-  'standard',
-  'fake-pulse',
-  'original-pulse',
-  'hidden-letter',
-  'the-void',
-  'invisible-frames',
-  'fake-frame-penalty',
-  'fake-frame-correct',
-  'fake-hint',
-  'outside-frames'
-];
-
-let illusionOrder = [];
-let illusionIndex = 0;
-let currentIllusion = 'standard';
-  
-function shuffleIllusions() {
-  illusionOrder = [...ILLUSIONS];
-
-  for (let i = illusionOrder.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-
-    [illusionOrder[i], illusionOrder[j]] =
-    [illusionOrder[j], illusionOrder[i]];
-  }
-
-  illusionIndex = 0;
-}
-
-function getNextIllusion() {
-  if (illusionIndex >= illusionOrder.length) {
-    shuffleIllusions();
-  }
-
-  return illusionOrder[illusionIndex++];
-}
 function updateRoundDisplay() {
   const display = document.getElementById('roundDisplay');
   if(display) display.textContent = round + '/' + maxRounds;
@@ -367,8 +323,6 @@ let fakeFrames = [];
 let pulseActive = false;
 let fakePulseTriggered = false;
 let fakePulseTimeout = null;
-let originalPulseTimeout = null;
-let invisibleFramesTimeout = null;
 let fakePulseActive = false;
 let fakePulseTime = 0;
 let colorShiftTimeout = null;
@@ -410,13 +364,14 @@ function clearVoidTimers() {
 }
 
 function startRound5Void() {
-  if (currentIllusion !== 'the-void' || voidTriggeredForRound5) return;
-  
+  if (round !== 5 || voidTriggeredForRound5) return;
+
   voidTriggeredForRound5 = true;
 
   // Rund 10 Sekunden nach Beginn von Runde 5
   voidStartTimer = setTimeout(() => {
-    if (currentIllusion !== 'the-void' || !gameRunning) return;
+    if (round !== 5 || !gameRunning) return;
+
     // Nur die Sichtbarkeit verändern.
     // Die Spiellogik und Animation laufen weiter.
     gameElement.classList.add('void-hidden');
@@ -546,34 +501,15 @@ function newTargetWord() {
   frameH = targetWord.length < 10 ? targetWord.length : 10;
 
 // Hint in Runde 4 deaktivieren
-hintDisabled = (currentIllusion === 'hidden-letter');
+hintDisabled = (round === 4);
   
   if(!hintRevealed){
     document.getElementById('wordHint').textContent =
       getMaskedWord(targetWord, round);
   }
 
-  if(originalPulseTimeout){
-  clearTimeout(originalPulseTimeout);
-  originalPulseTimeout = null;
-}
-
-  pulseActive = false;
-  pulseTime = 0;
-  
-  if(fakePulseTimeout){
-  clearTimeout(fakePulseTimeout);
-  fakePulseTimeout = null;
-}
-
-  fakePulseActive = false;
-  fakePulseTriggered = false;
-  fakePulseTime = 0;
-  
   randomizeFrame();
   generateFakeFrames();
-  triggerFakeFramePulse();
-  triggerOriginalFramePulse();
   // Alten Timer stoppen
   if(colorShiftTimeout){
     clearTimeout(colorShiftTimeout);
@@ -627,8 +563,7 @@ function revealHint(){
   hintRevealed = true;
   const hintEl = document.getElementById('wordHint');
 
-  
-   if(currentIllusion === 'fake-hint'){
+  if(round === 9){
     // 🎭 Fake Hint zuerst
     const fakeWord = getFakeWord(targetWord);
     hintEl.textContent = fakeWord;
@@ -765,7 +700,7 @@ function triggerColorShiftIllusion(){
 
  function triggerFakeFramePulse() {
 
-  if(currentIllusion !== 'fake-pulse') return;
+  if(round !== 2 && round !== 5) return;
   if(fakePulseTriggered) return;
   if(fakeFrames.length === 0) return;
 
@@ -779,21 +714,16 @@ function triggerColorShiftIllusion(){
   }, 6000);
 }
   
- function triggerOriginalFramePulse() {
+function triggerOriginalFramePulse() {
 
-  if(currentIllusion !== 'original-pulse') return;
+  if(round !== 3 && round !== 5) return;
 
-  if(originalPulseTimeout){
-    clearTimeout(originalPulseTimeout);
-  }
-
-  originalPulseTimeout = setTimeout(() => {
+  setTimeout(() => {
     pulseActive = true;
     pulseTime = 0;
-    originalPulseTimeout = null;
   }, 6000);
 
-}
+}  
   /* ===== GAME LOGIC ===== */
 function collide(arena, player) {
   const { x, y } = player.pos;
@@ -804,7 +734,7 @@ function merge(arena, player) {
   arena[player.pos.y][player.pos.x] = player.letter; 
 
   // Runde 4 Trick
-    if(currentIllusion === 'hidden-letter'){
+  if(round === 4){
     const secondFromBottom = frameY + frameH - 2;
 
     if(player.pos.x === frameX && player.pos.y === secondFromBottom){
@@ -841,16 +771,16 @@ if(letters.toUpperCase() === targetWord){
     )
   );
 
-  if(currentIllusion === 'outside-frames'){
+  if(round === 10){
+
   // In Runde 10 darf das Wort NICHT im Rahmen sein
   if(!inOriginalFrame && !inFakeFrame){
     targetFound = true;
   }
 
 }
-
-  else if(currentIllusion === 'fake-frame-correct'){ 
-  // In Runde 8 ist nur der Fake Frame korrekt
+else if(round === 8){
+    // In Runde 8 ist nur der Fake Frame korrekt
     if(inFakeFrame){
         targetFound = true;       // Fake Frame = korrekt
         // Optional: eigener Ton
@@ -862,8 +792,8 @@ if(letters.toUpperCase() === targetWord){
         targetFound = true;
     }
 
-   if(inFakeFrame && currentIllusion === 'fake-frame-penalty'){ 
-      fakeFrameHit = true;
+    if(inFakeFrame && round === 7){
+        fakeFrameHit = true;
     }
   }
 }   
@@ -874,12 +804,11 @@ if(letters.toUpperCase() === targetWord){
   setTimeout(()=>{
   if(fakeFrameHit){
 
-  // Eine Runde zurück, aktuelle Illusion behalten
-  round = Math.max(1, round - 1);
+  // Runde zurück
+  round = 6;
   updateRoundDisplay();
- clearTimeout(invisibleFramesTimeout);
-invisibleFramesTimeout = null;
-    // Spielfeld reset
+
+  // Spielfeld reset
   arena.forEach(r => r.fill(null));
   clearHighlights();
 
@@ -900,8 +829,7 @@ invisibleFramesTimeout = null;
   if(targetFound){
 
   framesInvisible = false; // 🔧 Reset damit neue Runde wieder sichtbar ist
-  round4InvisibleY = null;   
-  
+      
   playNextRoundTone(); // 👈 HIER
   // Spielfeld leeren
   arena.forEach(r=>r.fill(null));
@@ -910,10 +838,7 @@ invisibleFramesTimeout = null;
 
   // Runde erhöhen (max 9)
   round++;
-   
-  currentIllusion = getNextIllusion(); 
-  
-  mindMessageShown = false;
+   mindMessageShown = false;
    // Alte Void-Timer bei jedem Rundenwechsel entfernen
 
 resetRound5Void();
@@ -926,18 +851,16 @@ if(round > maxRounds){
 
 // Runde 5: THE VOID nach ca. 10 Sekunden planen
 
-if (currentIllusion === 'the-void') {
+if (round === 5) {
   startRound5Void();
 }
 
 // Runde 6 Spezialeffekt
-// Unsichtbare Frames – zufällige Illusion
-if(currentIllusion === 'invisible-frames'){
-  clearTimeout(invisibleFramesTimeout);
-  invisibleFramesTimeout = setTimeout(() => {
+if(round === 6){
+  setTimeout(()=>{
     framesInvisible = true;
-  }, 6000);
-}
+   },6000);
+ }
     colorShiftFakeTriggered = false;
     colorShiftIllusionTriggered = false;
   // Original-Farbe für den aktuellen Frame aktualisieren
@@ -945,13 +868,63 @@ if(currentIllusion === 'invisible-frames'){
   // 🧠 Geschwindigkeit pro Runde erhöhen
     dropInterval = Math.max(200, 700 - (round * 60));
   // Pulse nur ab Runde 2
-
-  pulseActive = false;
+if(round > 1){
+  pulseActive = true;
   pulseTime = 0;
 }
   // Neues Wort erzeugt auch neuen Original Frame
   newTargetWord();
+// Fake Frames neu erzeugen
+fakeFrames = [];
+let fakeCount = round - 1;
 
+// Array mit verfügbaren Farben kopieren
+let availableColors = [...COLORS];
+
+for(let i=0;i<fakeCount;i++){
+  let fx, fy;
+  let valid = false;
+
+  let attempts = 0;
+  let maxAttempts = 200;
+  
+  while(!valid && attempts < maxAttempts){
+  attempts++;
+    
+    fx = Math.floor(Math.random() * arena[0].length);
+    const minY = 5;
+    const maxY = arena.length - frameH;
+    fy = Math.floor(Math.random() * (maxY - minY)) + minY;
+
+    const overlapsOriginal =
+  fx === frameX &&
+  fy < frameY + frameH &&
+  fy + frameH > frameY;
+
+const overlapsFake = fakeFrames.some(f =>
+  f.x === fx &&
+  fy < f.y + frameH &&
+  fy + frameH > f.y
+);
+
+    if(!overlapsOriginal && !overlapsFake){
+      valid = true;
+    }
+  }
+
+  if(!valid) continue;   // 🔥 DAS FEHLT BEI DIR
+  // Zufällige Farbe auswählen und aus availableColors entfernen
+  let color = shuffledFrameColors[colorIndex];
+  colorIndex++;
+
+  if(colorIndex >= shuffledFrameColors.length){
+  shuffleFrameColors();
+}
+  fakeFrames.push({x: fx, y: fy, color: color});
+}
+fakePulseTriggered = false;
+ triggerFakeFramePulse();
+  triggerOriginalFramePulse();
   return;
 }
     found.flat().forEach(([y,x])=>arena[y][x]=null);
@@ -1332,9 +1305,9 @@ arena.forEach((row,y)=>{
     if(v){ 
 
       // Runde 4 Buchstabe unsichtbar
-if(currentIllusion === 'hidden-letter' && x === frameX && y === round4InvisibleY){
-  return;
-}
+      if(round === 4 && x === frameX && y === round4InvisibleY){
+        return;
+      }
 
       ctx.fillStyle = highlights[y][x]||COLORS[(x+y)%COLORS.length]; 
       ctx.fillText(v,x+0.5,y+0.5); 
@@ -1388,30 +1361,18 @@ document.getElementById('introPreviewOverlay')?.remove();
     colorIndex = 0;
     
     gameRunning = true;
-    shuffleIllusions();
-    currentIllusion = getNextIllusion();
     resetPlayer();
     //round = 10;  fur test ( game )
     newTargetWord();
     updateRoundDisplay(); // ← Anzeige direkt updaten
-  if(currentIllusion === 'the-void') startRound5Void();
-
-if(currentIllusion === 'invisible-frames'){
-  clearTimeout(invisibleFramesTimeout);
-  invisibleFramesTimeout = setTimeout(() => {
-    framesInvisible = true;
-  }, 6000);
-}
- 
   }
 }
+
 
 function restartGame() {
   resetRound5Void();
 
   round = 1;
-  shuffleIllusions();
-  currentIllusion = getNextIllusion();
   frameColor = originalFrameColors[0];
   mindMessageShown = false;
   framesInvisible = false;
@@ -1425,9 +1386,7 @@ function restartGame() {
   if (revealTimeout) clearTimeout(revealTimeout);
   if (colorShiftTimeout) clearTimeout(colorShiftTimeout);
   if (fakePulseTimeout) clearTimeout(fakePulseTimeout);
-  if (invisibleFramesTimeout) clearTimeout(invisibleFramesTimeout);
-  invisibleFramesTimeout = null;
-  
+
   arena.forEach(r => r.fill(null));
   clearHighlights();
 
@@ -1435,7 +1394,7 @@ function restartGame() {
   colorIndex = 0;
 
   newTargetWord();
-  
+  generateFakeFrames();
   resetPlayer();
 
   dropCounter = 0;
@@ -1468,8 +1427,8 @@ const messages = [
 
 setInterval(()=>{
 
-  if(currentIllusion === 'invisible-frames' && !mindMessageShown){
-    
+  if(round === 6 && !mindMessageShown){
+
     const msg = document.getElementById("mindMessage");
 
     const randomText = messages[Math.floor(Math.random()*messages.length)];
@@ -1490,8 +1449,7 @@ setInterval(()=>{
 update();
 </script>
 </body>
-</html> 
-
+</html>
 
 
 
