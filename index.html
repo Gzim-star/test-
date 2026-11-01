@@ -315,6 +315,44 @@ let frameH = 10; // Höhe fix
 // 🟫 FAKE FRAMES SYSTEM
 let round = 1;
 const maxRounds = 10;
+// ===== RANDOM ILLUSIONS SYSTEM =====
+
+const ILLUSIONS = [
+  'standard',
+  'fake-pulse',
+  'original-pulse',
+  'hidden-letter',
+  'the-void',
+  'invisible-frames',
+  'fake-frame-penalty',
+  'fake-frame-correct',
+  'fake-hint',
+  'outside-frames'
+];
+
+let illusionOrder = [];
+let illusionIndex = 0;
+
+function shuffleIllusions() {
+  illusionOrder = [...ILLUSIONS];
+
+  for (let i = illusionOrder.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+
+    [illusionOrder[i], illusionOrder[j]] =
+    [illusionOrder[j], illusionOrder[i]];
+  }
+
+  illusionIndex = 0;
+}
+
+function getNextIllusion() {
+  if (illusionIndex >= illusionOrder.length) {
+    shuffleIllusions();
+  }
+
+  return illusionOrder[illusionIndex++];
+}
 function updateRoundDisplay() {
   const display = document.getElementById('roundDisplay');
   if(display) display.textContent = round + '/' + maxRounds;
