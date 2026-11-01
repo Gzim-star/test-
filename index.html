@@ -1385,6 +1385,11 @@ document.getElementById('introPreviewOverlay')?.remove();
     //round = 10;  fur test ( game )
     newTargetWord();
     updateRoundDisplay(); // ← Anzeige direkt updaten
+  if(currentIllusion === 'the-void') startRound5Void();
+
+if(currentIllusion === 'invisible-frames'){
+  setTimeout(() => { framesInvisible = true; }, 6000);
+   }
   }
 }
 
@@ -1416,7 +1421,7 @@ function restartGame() {
   colorIndex = 0;
 
   newTargetWord();
-  generateFakeFrames();
+  
   resetPlayer();
 
   dropCounter = 0;
