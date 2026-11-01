@@ -926,9 +926,10 @@ if (currentIllusion === 'the-void') {
 // Runde 6 Spezialeffekt
 // Unsichtbare Frames – zufällige Illusion
 if(currentIllusion === 'invisible-frames'){
-  setTimeout(()=>{
+  clearTimeout(invisibleFramesTimeout);
+  invisibleFramesTimeout = setTimeout(() => {
     framesInvisible = true;
-  },6000);
+  }, 6000);
 }
     colorShiftFakeTriggered = false;
     colorShiftIllusionTriggered = false;
@@ -1415,7 +1416,9 @@ function restartGame() {
   if (revealTimeout) clearTimeout(revealTimeout);
   if (colorShiftTimeout) clearTimeout(colorShiftTimeout);
   if (fakePulseTimeout) clearTimeout(fakePulseTimeout);
-
+  if (invisibleFramesTimeout) clearTimeout(invisibleFramesTimeout);
+  invisibleFramesTimeout = null;
+  
   arena.forEach(r => r.fill(null));
   clearHighlights();
 
