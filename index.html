@@ -332,7 +332,8 @@ const ILLUSIONS = [
 
 let illusionOrder = [];
 let illusionIndex = 0;
-
+let currentIllusion = 'standard';
+  
 function shuffleIllusions() {
   illusionOrder = [...ILLUSIONS];
 
@@ -361,6 +362,7 @@ let fakeFrames = [];
 let pulseActive = false;
 let fakePulseTriggered = false;
 let fakePulseTimeout = null;
+let originalPulseTimeout = null;
 let fakePulseActive = false;
 let fakePulseTime = 0;
 let colorShiftTimeout = null;
@@ -539,15 +541,24 @@ function newTargetWord() {
   frameH = targetWord.length < 10 ? targetWord.length : 10;
 
 // Hint in Runde 4 deaktivieren
-hintDisabled = (round === 4);
+hintDisabled = (currentIllusion === 'hidden-letter');
   
   if(!hintRevealed){
     document.getElementById('wordHint').textContent =
       getMaskedWord(targetWord, round);
   }
 
+  if(originalPulseTimeout){
+  clearTimeout(originalPulseTimeout);
+  originalPulseTimeout = null;
+}
+
+  pulseActive = false;
+  pulseTime = 0;
   randomizeFrame();
   generateFakeFrames();
+  triggerFakeFramePulse();
+  triggerOriginalFramePulse();
   // Alten Timer stoppen
   if(colorShiftTimeout){
     clearTimeout(colorShiftTimeout);
@@ -601,7 +612,8 @@ function revealHint(){
   hintRevealed = true;
   const hintEl = document.getElementById('wordHint');
 
-  if(round === 9){
+  
+   if(currentIllusion === 'fake-hint'){
     // 🎭 Fake Hint zuerst
     const fakeWord = getFakeWord(targetWord);
     hintEl.textContent = fakeWord;
@@ -738,7 +750,7 @@ function triggerColorShiftIllusion(){
 
  function triggerFakeFramePulse() {
 
-  if(round !== 2 && round !== 5) return;
+  if(currentIllusion !== 'fake-pulse') return;
   if(fakePulseTriggered) return;
   if(fakeFrames.length === 0) return;
 
@@ -752,16 +764,21 @@ function triggerColorShiftIllusion(){
   }, 6000);
 }
   
-function triggerOriginalFramePulse() {
+ function triggerOriginalFramePulse() {
 
-  if(round !== 3 && round !== 5) return;
+  if(currentIllusion !== 'original-pulse') return;
 
-  setTimeout(() => {
+  if(originalPulseTimeout){
+    clearTimeout(originalPulseTimeout);
+  }
+
+  originalPulseTimeout = setTimeout(() => {
     pulseActive = true;
     pulseTime = 0;
+    originalPulseTimeout = null;
   }, 6000);
 
-}  
+}
   /* ===== GAME LOGIC ===== */
 function collide(arena, player) {
   const { x, y } = player.pos;
@@ -772,7 +789,7 @@ function merge(arena, player) {
   arena[player.pos.y][player.pos.x] = player.letter; 
 
   // Runde 4 Trick
-  if(round === 4){
+    if(currentIllusion === 'hidden-letter'){
     const secondFromBottom = frameY + frameH - 2;
 
     if(player.pos.x === frameX && player.pos.y === secondFromBottom){
@@ -809,16 +826,16 @@ if(letters.toUpperCase() === targetWord){
     )
   );
 
-  if(round === 10){
-
+  if(currentIllusion === 'outside-frames'){
   // In Runde 10 darf das Wort NICHT im Rahmen sein
   if(!inOriginalFrame && !inFakeFrame){
     targetFound = true;
   }
 
 }
-else if(round === 8){
-    // In Runde 8 ist nur der Fake Frame korrekt
+
+  else if(currentIllusion === 'fake-frame-correct'){ 
+  // In Runde 8 ist nur der Fake Frame korrekt
     if(inFakeFrame){
         targetFound = true;       // Fake Frame = korrekt
         // Optional: eigener Ton
@@ -830,8 +847,8 @@ else if(round === 8){
         targetFound = true;
     }
 
-    if(inFakeFrame && round === 7){
-        fakeFrameHit = true;
+   if(inFakeFrame && currentIllusion === 'fake-frame-penalty'){ 
+      fakeFrameHit = true;
     }
   }
 }   
@@ -876,7 +893,10 @@ else if(round === 8){
 
   // Runde erhöhen (max 9)
   round++;
-   mindMessageShown = false;
+   
+  currentIllusion = getNextIllusion(); 
+  
+  mindMessageShown = false;
    // Alte Void-Timer bei jedem Rundenwechsel entfernen
 
 resetRound5Void();
@@ -889,16 +909,17 @@ if(round > maxRounds){
 
 // Runde 5: THE VOID nach ca. 10 Sekunden planen
 
-if (round === 5) {
+if (currentIllusion === 'the-void') {
   startRound5Void();
 }
 
 // Runde 6 Spezialeffekt
-if(round === 6){
+// Unsichtbare Frames – zufällige Illusion
+if(currentIllusion === 'invisible-frames'){
   setTimeout(()=>{
     framesInvisible = true;
-   },6000);
- }
+  },6000);
+}
     colorShiftFakeTriggered = false;
     colorShiftIllusionTriggered = false;
   // Original-Farbe für den aktuellen Frame aktualisieren
@@ -906,8 +927,8 @@ if(round === 6){
   // 🧠 Geschwindigkeit pro Runde erhöhen
     dropInterval = Math.max(200, 700 - (round * 60));
   // Pulse nur ab Runde 2
-if(round > 1){
-  pulseActive = true;
+
+  pulseActive = false;
   pulseTime = 0;
 }
   // Neues Wort erzeugt auch neuen Original Frame
@@ -1343,9 +1364,9 @@ arena.forEach((row,y)=>{
     if(v){ 
 
       // Runde 4 Buchstabe unsichtbar
-      if(round === 4 && x === frameX && y === round4InvisibleY){
-        return;
-      }
+if(currentIllusion === 'hidden-letter' && x === frameX && y === round4InvisibleY){
+  return;
+}
 
       ctx.fillStyle = highlights[y][x]||COLORS[(x+y)%COLORS.length]; 
       ctx.fillText(v,x+0.5,y+0.5); 
@@ -1399,6 +1420,8 @@ document.getElementById('introPreviewOverlay')?.remove();
     colorIndex = 0;
     
     gameRunning = true;
+    shuffleIllusions();
+    currentIllusion = getNextIllusion();
     resetPlayer();
     //round = 10;  fur test ( game )
     newTargetWord();
@@ -1411,6 +1434,8 @@ function restartGame() {
   resetRound5Void();
 
   round = 1;
+  shuffleIllusions();
+  currentIllusion = getNextIllusion();
   frameColor = originalFrameColors[0];
   mindMessageShown = false;
   framesInvisible = false;
@@ -1465,8 +1490,8 @@ const messages = [
 
 setInterval(()=>{
 
-  if(round === 6 && !mindMessageShown){
-
+  if(currentIllusion === 'invisible-frames' && !mindMessageShown){
+    
     const msg = document.getElementById("mindMessage");
 
     const randomText = messages[Math.floor(Math.random()*messages.length)];
