@@ -872,7 +872,9 @@ if(letters.toUpperCase() === targetWord){
   // Eine Runde zurück, aktuelle Illusion behalten
   round = Math.max(1, round - 1);
   updateRoundDisplay();
-  // Spielfeld reset
+ clearTimeout(invisibleFramesTimeout);
+invisibleFramesTimeout = null;
+    // Spielfeld reset
   arena.forEach(r => r.fill(null));
   clearHighlights();
 
