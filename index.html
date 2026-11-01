@@ -3,347 +3,569 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>POLY BOT V3.1</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Polymarket Scanner V4</title>
 <style>
-body{background:#090d13;color:#e8f0f8;font-family:Arial;padding:16px}
-h1{color:#00ffcc;letter-spacing:3px}
-button{background:#00ffcc;border:0;padding:14px;border-radius:8px;font-weight:bold}
-.card{background:#151e29;border:1px solid #293849;border-radius:10px;padding:14px;margin:12px 0;overflow-wrap:anywhere}
-.good{color:#00ff99}.warn{color:#ffcc00}.bad{color:#ff7777}
-.muted{color:#9aabba;font-size:13px}
-.big{font-size:25px;color:#00ffcc}
+*{box-sizing:border-box}
+body{
+  margin:0;padding:18px;background:#080d14;color:#e8f0fa;
+  font-family:Arial,sans-serif
+}
+main{max-width:950px;margin:auto}
+h1{color:#00e6b8;margin-bottom:5px}
+.sub{color:#8fa3b8;font-size:13px}
+button{
+  background:#00d6a8;color:#001b16;border:0;border-radius:8px;
+  padding:13px 20px;font-weight:bold;font-size:15px;cursor:pointer;
+  margin:15px 0
+}
+button:disabled{opacity:.5}
+.panel{
+  background:#111b28;border:1px solid #26384b;border-radius:12px;
+  padding:15px;margin:12px 0
+}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:#0b1420;padding:12px;border-radius:8px}
+.stat strong{display:block;font-size:23px;color:#00e6b8}
+.stat span{font-size:11px;color:#9aacc0}
+.market{
+  border-bottom:1px solid #26384b;padding:13px 0;
+  overflow-wrap:anywhere
+}
+.market:last-child{border:0}
+.question{font-weight:bold;margin-bottom:8px}
+.small{font-size:12px;color:#9aacc0;line-height:1.6}
+.good{color:#00e6a8}
+.warn{color:#ffc857}
+.bad{color:#ff7777}
+.tag{
+  display:inline-block;padding:4px 7px;border-radius:5px;
+  background:#203247;font-size:11px;margin:3px 3px 3px 0
+}
+#status{color:#ffc857;min-height:20px;font-size:13px}
+h2{font-size:17px;margin:0 0 12px}
+footer{color:#71869d;font-size:11px;margin:25px 0}
+@media(max-width:500px){
+  body{padding:12px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+}
 </style>
 </head>
 <body>
+<main>
+  <h1>POLYMARKET V4</h1>
+  <div class="sub">Market Scanner · Orderbuch · Gebühren · Ähnliche Märkte</div>
 
-<h1>POLY BOT V3.1</h1>
-<p>STRICT ARBITRAGE · DIAGNOSTICS</p>
-<p class="muted">READ ONLY · NO WALLET · NO TRADES</p>
+  <div class="panel">
+    <div class="small">
+      Read-only Analyse. Keine Trades, kein Wallet und keine privaten Schlüssel.
+    </div>
+    <button id="scanBtn" onclick="startScan()">START SCAN</button>
+    <div id="status">Bereit für den Scan.</div>
+  </div>
 
-<button onclick="scan()">START FULL SCAN</button>
-<p id="status">Scanner bereit.</p>
-<div id="summary"></div>
-<div id="results"></div>
-<div id="diagnostics"></div>
+  <div class="panel">
+    <h2>Scan-Ergebnis</h2>
+    <div class="stats">
+      <div class="stat"><strong id="total">0</strong><span>Märkte geladen</span></div>
+      <div class="stat"><strong id="checked">0</strong><span>Orderbücher geprüft</span></div>
+      <div class="stat"><strong id="candidates">0</strong><span>Arbitrage-Kandidaten</span></div>
+      <div class="stat"><strong id="invalid">0</strong><span>Ungültige Märkte</span></div>
+      <div class="stat"><strong id="empty">0</strong><span>Leere Orderbücher</span></div>
+      <div class="stat"><strong id="errors">0</strong><span>API-Fehler</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>1. Mögliche Arbitrage</h2>
+    <div class="small">
+      YES + NO werden zum verfügbaren Verkaufspreis (Ask) geprüft.
+      Gebühren und Orderbuch-Tiefe werden berücksichtigt.
+    </div>
+    <div id="arbResults" class="small">Noch keine Analyse.</div>
+  </div>
+
+  <div class="panel">
+    <h2>2. Ähnliche Märkte</h2>
+    <div class="small">
+      Ähnliche Formulierungen können auf zusammenhängende Ereignisse hinweisen.
+      Das ist ausdrücklich kein Arbitrage-Nachweis.
+    </div>
+    <div id="similarResults" class="small">Noch keine Analyse.</div>
+  </div>
+
+  <div class="panel">
+    <h2>3. Marktübersicht</h2>
+    <div id="marketResults" class="small">Noch keine Analyse.</div>
+  </div>
+
+  <footer>
+    V4 · Öffentliche Polymarket-Daten · Simulation only.
+    Preise und Orderbücher können sich jederzeit ändern.
+  </footer>
+</main>
 
 <script>
-const API="https://gamma-api.polymarket.com";
-const CLOB="https://clob.polymarket.com";
+const GAMMA = "https://gamma-api.polymarket.com";
+const CLOB = "https://clob.polymarket.com";
 
-function parse(v){
-  try{return typeof v==="string"?JSON.parse(v):v}
-  catch(e){return null}
-}
+const $ = id => document.getElementById(id);
 
-async function get(url){
-  const r=await fetch(url);
-  if(!r.ok)throw Error("HTTP "+r.status);
-  return r.json();
-}
-
-async function book(token){
-  return get(CLOB+"/book?token_id="+encodeURIComponent(token));
-}
-
-async function fee(token){
-  return get(CLOB+"/fee-rate?token_id="+encodeURIComponent(token));
-}
-
-// Fee rate: feeRate is a decimal fraction.
-// Legacy base_fee is expressed in basis points.
-function readFee(data){
-  if(data && data.feeRate!==undefined)
-    return Number(data.feeRate);
-
-  if(data && data.fee_rate!==undefined)
-    return Number(data.fee_rate);
-
-  if(data && data.base_fee!==undefined)
-    return Number(data.base_fee)/10000;
-
-  throw Error("Gebührenformat unbekannt");
-}
-
-function asks(book){
-  return (book.asks||[])
-    .map(x=>({
-      price:Number(x.price),
-      size:Number(x.size)
-    }))
-    .filter(x=>
-      Number.isFinite(x.price)&&
-      Number.isFinite(x.size)&&
-      x.price>0&&x.price<1&&x.size>0
-    )
-    .sort((a,b)=>a.price-b.price);
-}
-
-// Calculate the total purchase cost and fees
-// for a requested quantity across multiple levels.
-function sweep(levels,quantity,rate){
-  let remaining=quantity;
-  let cost=0;
-  let fees=0;
-
-  for(const level of levels){
-    const take=Math.min(remaining,level.size);
-
-    cost+=take*level.price;
-    fees+=take*rate*level.price*(1-level.price);
-
-    remaining-=take;
-
-    if(remaining<0.00000001)break;
+function parseArray(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string") {
+    try { return JSON.parse(value); } catch(e) {}
   }
-
-  if(remaining>0.00000001)return null;
-
-  return {cost,fees};
+  return [];
 }
 
-function depth(levels){
-  return levels.reduce((sum,x)=>sum+x.size,0);
+function number(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
 }
 
-function breakpoints(a,b){
-  const values=new Set();
-  let sum=0;
-
-  for(const level of a){
-    sum+=level.size;
-    values.add(sum);
-  }
-
-  sum=0;
-  for(const level of b){
-    sum+=level.size;
-    values.add(sum);
-  }
-
-  return [...values].sort((x,y)=>x-y);
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;",
+    '"':"&quot;", "'":"&#39;"
+  }[c]));
 }
 
-function el(tag,cls,content){
-  const node=document.createElement(tag);
-  if(cls)node.className=cls;
-  node.textContent=content;
-  return node;
+async function getJSON(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("HTTP " + response.status);
+  return response.json();
 }
 
-function card(title,lines,container,cls=""){
-  const box=el("div","card "+cls,"");
-  box.appendChild(el("h3","",title));
+function getOutcomeTokens(market) {
+  const outcomes = parseArray(market.outcomes);
+  const tokens = parseArray(market.clobTokenIds);
 
-  lines.forEach(line=>{
-    box.appendChild(el("p",line.cls||"",line.text));
-  });
+  if (outcomes.length !== 2 || tokens.length !== 2) return null;
 
-  container.appendChild(box);
-}
+  const yesIndex = outcomes.findIndex(x =>
+    String(x).toLowerCase() === "yes"
+  );
+  const noIndex = outcomes.findIndex(x =>
+    String(x).toLowerCase() === "no"
+  );
 
-async function scan(){
-  const status=document.getElementById("status");
-  const results=document.getElementById("results");
-  const summary=document.getElementById("summary");
-  const diagnostics=document.getElementById("diagnostics");
+  if (yesIndex < 0 || noIndex < 0) return null;
 
-  results.innerHTML="";
-  summary.innerHTML="";
-  diagnostics.innerHTML="";
-
-  const counts={
-    examined:0,
-    candidates:0,
-    invalid:0,
-    api:0,
-    fees:0,
-    liquidity:0,
-    noBook:0,
-    noEdge:0
+  return {
+    yes: String(tokens[yesIndex]),
+    no: String(tokens[noIndex])
   };
+}
 
-  const reasons=[];
+// Gebührenrate aus den Marktdaten oder dem öffentlichen Fee-Endpunkt.
+async function getFeeRate(market, tokenId) {
+  const schedule = market.feeSchedule;
 
-  function problem(name,reason){
-    if(reasons.length<30)
-      reasons.push(name+": "+reason);
+  if (schedule && schedule.rate !== undefined) {
+    return {
+      rate: number(schedule.rate),
+      exponent: schedule.exponent === undefined
+        ? 1 : number(schedule.exponent),
+      known: true
+    };
   }
 
-  try{
-    status.textContent="Lade Märkte...";
+  if (market.feesEnabled === false) {
+    return {rate:0, exponent:1, known:true};
+  }
 
-    const markets=await get(
-      API+"/markets?active=true&closed=false"+
-      "&limit=30&order=volume24hr&ascending=false"
-    );
+  const data = await getJSON(
+    CLOB + "/fee-rate?token_id=" + encodeURIComponent(tokenId)
+  );
 
-    for(let i=0;i<markets.length;i++){
-      const m=markets[i];
-      status.textContent=
-        "Untersuche Markt "+(i+1)+" von "+markets.length;
+  if (data.feeRate !== undefined) {
+    return {rate:number(data.feeRate), exponent:1, known:true};
+  }
 
-      try{
-        const ids=parse(m.clobTokenIds);
-        const outcomes=parse(m.outcomes);
+  if (data.base_fee !== undefined) {
+    return {
+      rate:number(data.base_fee) / 10000,
+      exponent:1,
+      known:true
+    };
+  }
 
-        if(!Array.isArray(ids)||
-           !Array.isArray(outcomes)||
-           ids.length!==2||outcomes.length!==2){
-          counts.invalid++;
-          problem(m.question||"Unbekannter Markt",
-                  "Kein binärer YES/NO-Markt");
-          continue;
-        }
+  if (data.fee_rate !== undefined) {
+    return {
+      rate:number(data.fee_rate),
+      exponent:1,
+      known:true
+    };
+  }
 
-        const yi=outcomes.findIndex(
-          x=>String(x).toLowerCase()==="yes");
-        const ni=outcomes.findIndex(
-          x=>String(x).toLowerCase()==="no");
+  return {rate:0, exponent:1, known:false};
+}
 
-        if(yi<0||ni<0){
-          counts.invalid++;
-          problem(m.question,"YES/NO-Zuordnung fehlt");
-          continue;
-        }
+function cleanAsks(book) {
+  return (book.asks || [])
+    .map(level => ({
+      price:number(level.price),
+      size:number(level.size)
+    }))
+    .filter(x => x.price > 0 && x.price < 1 && x.size > 0)
+    .sort((a,b) => a.price - b.price);
+}
 
-        const [yb,nb,yf,nf]=await Promise.all([
-          book(ids[yi]),book(ids[ni]),
-          fee(ids[yi]),fee(ids[ni])
-        ]);
+function cumulativeSizes(levels, maxQty) {
+  let total = 0;
+  const points = [];
 
-        counts.examined++;
+  for (const level of levels) {
+    total += level.size;
+    if (total > 0) points.push(Math.min(total, maxQty));
+    if (total >= maxQty) break;
+  }
+  return points;
+}
 
-        const yr=readFee(yf);
-        const nr=readFee(nf);
+// Berechnet Kaufkosten für eine bestimmte Stückzahl.
+function calculateLeg(levels, qty, fee) {
+  let remaining = qty;
+  let cost = 0;
 
-        if(!Number.isFinite(yr)||!Number.isFinite(nr)||
-           yr<0||nr<0){
-          counts.fees++;
-          problem(m.question,"Ungültige Gebührenwerte");
-          continue;
-        }
+  for (const level of levels) {
+    if (remaining <= 0) break;
 
-        const ya=asks(yb);
-        const na=asks(nb);
+    const take = Math.min(remaining, level.size);
+    cost += take * level.price;
+    remaining -= take;
+  }
 
-        if(!ya.length||!na.length){
-          counts.noBook++;
-          problem(m.question,"YES- oder NO-Orderbuch leer");
-          continue;
-        }
+  if (remaining > 0.000001) return null;
 
-        const maxQty=Math.min(depth(ya),depth(na));
+  let feeAmount = 0;
 
-        const minimum=Math.max(
-          Number(yb.min_order_size||0),
-          Number(nb.min_order_size||0)
-        );
+  if (fee.rate > 0) {
+    for (const level of levels) {
+      // Gebühr auf die tatsächlich ausgeführte Menge
+      const take = Math.min(qty, level.size);
+      if (take <= 0) continue;
 
-        if(maxQty<minimum){
-          counts.liquidity++;
-          problem(m.question,"Zu wenig gemeinsame Liquidität");
-          continue;
-        }
+      feeAmount += take * fee.rate *
+        level.price *
+        Math.pow(1 - level.price, fee.exponent);
 
-        let best=null;
+      qty -= take;
+      if (qty <= 0) break;
+    }
+  }
 
-        for(const q of breakpoints(ya,na)){
-          if(q<minimum||q>maxQty)continue;
+  // Polymarket rundet Gebühren auf 5 Dezimalstellen.
+  feeAmount = Math.round(feeAmount * 100000) / 100000;
 
-          const yc=sweep(ya,q,yr);
-          const nc=sweep(na,q,nr);
+  return {cost, fee:feeAmount};
+}
 
-          if(!yc||!nc)continue;
+function evaluatePair(yesBook, noBook, yesFee, noFee) {
+  const yesAsks = cleanAsks(yesBook);
+  const noAsks = cleanAsks(noBook);
 
-          const investment=
-            yc.cost+nc.cost+yc.fees+nc.fees;
+  if (!yesAsks.length || !noAsks.length) {
+    return {empty:true};
+  }
 
-          const profit=q-investment;
+  const maxQty = 50;
 
-          if(!best||profit>best.profit){
-            best={q,investment,profit,
-                  yCost:yc.cost,nCost:nc.cost,
-                  fees:yc.fees+nc.fees};
-          }
-        }
+  const points = [
+    ...cumulativeSizes(yesAsks, maxQty),
+    ...cumulativeSizes(noAsks, maxQty),
+    maxQty
+  ];
 
-        if(!best||best.profit<=0){
-          counts.noEdge++;
-          problem(m.question,
-                  "Kein positiver Gewinn nach geschätzten Gebühren");
-          continue;
-        }
+  const quantities = [...new Set(points)]
+    .filter(q => q > 0)
+    .sort((a,b) => a-b);
 
-        counts.candidates++;
+  let best = null;
 
-        card(
-          "ARBITRAGE-KANDIDAT",
-          [
-            {text:m.question,cls:"good"},
-            {text:"YES Gebührenrate: "+yr},
-            {text:"NO Gebührenrate: "+nr},
-            {text:"YES Kaufkosten: $"+best.yCost.toFixed(4)},
-            {text:"NO Kaufkosten: $"+best.nCost.toFixed(4)},
-            {text:"Geschätzte Gebühren: $"+best.fees.toFixed(4)},
-            {text:"Gemeinsame Stückzahl: "+best.q.toFixed(4)},
-            {text:"Kapitalbedarf: $"+best.investment.toFixed(4)},
-            {text:"Theoretischer Nettogewinn: +$"+
-              best.profit.toFixed(4),cls:"good"},
-            {text:"Nur theoretisch – keine Ausführungsgarantie.",
-              cls:"warn"}
-          ],
-          results
-        );
+  for (const qty of quantities) {
+    const y = calculateLeg(yesAsks, qty, yesFee);
+    const n = calculateLeg(noAsks, qty, noFee);
 
-      }catch(e){
-        const message=String(e.message||e);
+    if (!y || !n) continue;
 
-        if(message.includes("Gebührenformat")){
-          counts.fees++;
-        }else{
-          counts.api++;
-        }
+    const totalCost = y.cost + n.cost + y.fee + n.fee;
+    const payout = qty;
+    const profit = payout - totalCost;
 
-        problem(m.question||"Unbekannter Markt",message);
+    if (!best || profit > best.profit) {
+      best = {
+        qty,
+        totalCost,
+        payout,
+        profit,
+        averageCost:totalCost / qty,
+        yesFee:y.fee,
+        noFee:n.fee
+      };
+    }
+  }
+
+  return best || {empty:true};
+}
+
+// Ähnlichkeit der Fragestellungen – nur ein Hinweis, keine Logikprüfung.
+const STOPWORDS = new Set([
+  "will","the","be","to","of","in","on","a","an","is","by",
+  "for","and","or","with","at","from","this","that","it",
+  "2026","2027","2028","what","when","who","how"
+]);
+
+function words(text) {
+  return String(text || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g," ")
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !STOPWORDS.has(w));
+}
+
+function similarity(a,b) {
+  const A = new Set(words(a));
+  const B = new Set(words(b));
+  if (!A.size || !B.size) return 0;
+
+  let common = 0;
+  for (const w of A) if (B.has(w)) common++;
+
+  return common / (A.size + B.size - common);
+}
+
+async function worker(items, limit, task) {
+  let index = 0;
+
+  const workers = Array.from(
+    {length:Math.min(limit,items.length)},
+    async () => {
+      while (index < items.length) {
+        const current = items[index++];
+        await task(current);
       }
     }
+  );
 
-    const totalSkipped=
-      counts.invalid+counts.api+counts.fees+
-      counts.liquidity+counts.noBook+counts.noEdge;
+  await Promise.all(workers);
+}
 
-    card(
-      "SCAN ERGEBNIS",
-      [
-        {text:"Geprüft: "+counts.examined},
-        {text:"Kandidaten: "+counts.candidates,cls:"good"},
-        {text:"Ungültige Märkte: "+counts.invalid},
-        {text:"API-Fehler: "+counts.api},
-        {text:"Gebührenprobleme: "+counts.fees},
-        {text:"Leere Orderbücher: "+counts.noBook},
-        {text:"Zu wenig Liquidität: "+counts.liquidity},
-        {text:"Kein Preisvorteil: "+counts.noEdge},
-        {text:"Übersprungene Märkte: "+totalSkipped}
-      ],
-      summary
+let scanning = false;
+
+async function startScan() {
+  if (scanning) return;
+
+  scanning = true;
+  $("scanBtn").disabled = true;
+  $("status").textContent = "Lade bis zu 100 Märkte ...";
+
+  $("arbResults").textContent = "Analyse läuft ...";
+  $("similarResults").textContent = "Analyse läuft ...";
+  $("marketResults").textContent = "Analyse läuft ...";
+
+  const stats = {
+    total:0, checked:0, candidates:0,
+    invalid:0, empty:0, errors:0
+  };
+
+  const arbitrage = [];
+  const marketData = [];
+  const validMarkets = [];
+
+  try {
+    const markets = await getJSON(
+      GAMMA +
+      "/markets?active=true&closed=false&limit=100" +
+      "&order=volume24hr&ascending=false"
     );
 
-    card(
-      "DIAGNOSE – WARUM WURDE EIN MARKT ÜBERSPRUNGEN?",
-      reasons.map(x=>({text:x,cls:"muted"})),
-      diagnostics
-    );
+    stats.total = markets.length;
+    $("total").textContent = stats.total;
 
-    status.textContent="Scan abgeschlossen.";
+    for (const market of markets) {
+      const tokens = getOutcomeTokens(market);
 
-  }catch(e){
-    status.textContent="Scanner-Fehler: "+e.message;
+      if (!tokens || !market.question) {
+        stats.invalid++;
+        continue;
+      }
+
+      validMarkets.push({market,tokens});
+    }
+
+    $("invalid").textContent = stats.invalid;
+    $("status").textContent =
+      validMarkets.length + " Märkte werden untersucht ...";
+
+    await worker(validMarkets, 6, async item => {
+      const {market,tokens} = item;
+
+      try {
+        const [yesBook,noBook,yesFee,noFee] = await Promise.all([
+          getJSON(CLOB + "/book?token_id=" +
+            encodeURIComponent(tokens.yes)),
+          getJSON(CLOB + "/book?token_id=" +
+            encodeURIComponent(tokens.no)),
+          getFeeRate(market,tokens.yes),
+          getFeeRate(market,tokens.no)
+        ]);
+
+        stats.checked++;
+
+        if (!yesFee.known || !noFee.known) {
+          stats.errors++;
+          return;
+        }
+
+        const result = evaluatePair(
+          yesBook,noBook,yesFee,noFee
+        );
+
+        if (result.empty) {
+          stats.empty++;
+        } else if (result.profit > 0.0001) {
+          stats.candidates++;
+
+          arbitrage.push({
+            question:market.question,
+            slug:market.slug,
+            ...result
+          });
+        }
+
+        marketData.push({
+          question:market.question,
+          volume:number(market.volume24hr),
+          liquidity:number(market.liquidity),
+          yes:cleanAsks(yesBook)[0]?.price ?? null,
+          no:cleanAsks(noBook)[0]?.price ?? null
+        });
+
+      } catch(error) {
+        stats.errors++;
+      }
+
+      $("checked").textContent = stats.checked;
+      $("candidates").textContent = stats.candidates;
+      $("empty").textContent = stats.empty;
+      $("errors").textContent = stats.errors;
+    });
+
+    renderArbitrage(arbitrage);
+    renderSimilar(validMarkets);
+    renderMarkets(marketData);
+
+    $("status").textContent =
+      "Scan abgeschlossen. " + stats.total +
+      " Märkte geladen, " + stats.checked +
+      " geprüft.";
+
+  } catch(error) {
+    $("status").textContent =
+      "Fehler beim Laden: " + error.message;
+  } finally {
+    scanning = false;
+    $("scanBtn").disabled = false;
   }
+}
+
+function renderArbitrage(results) {
+  const target = $("arbResults");
+
+  if (!results.length) {
+    target.innerHTML =
+      '<div class="warn">Keine Kandidaten gefunden. ' +
+      'Das bedeutet nicht, dass es auf ganz Polymarket keine gibt.</div>';
+    return;
+  }
+
+  results.sort((a,b) => b.profit - a.profit);
+
+  target.innerHTML = results.map(r => `
+    <div class="market">
+      <div class="question">${escapeHTML(r.question)}</div>
+      <span class="tag good">Möglicher Kandidat</span>
+      <div class="small">
+        Menge: ${r.qty.toFixed(2)} Shares<br>
+        Geschätzte Gesamtkosten: ${r.totalCost.toFixed(5)} USDC<br>
+        Auszahlung bei vollständiger Abwicklung: ${r.payout.toFixed(2)} USDC<br>
+        Geschätzter Überschuss: 
+        <strong class="good">${r.profit.toFixed(5)} USDC</strong><br>
+        Durchschnittskosten je YES+NO-Paar:
+        ${r.averageCost.toFixed(5)} USDC
+      </div>
+    </div>
+  `).join("");
+}
+
+function renderSimilar(items) {
+  const target = $("similarResults");
+  const pairs = [];
+
+  // Maximal 100 Märkte: Vergleich aller unterschiedlichen Paare.
+  for (let i=0; i<items.length; i++) {
+    for (let j=i+1; j<items.length; j++) {
+      const a = items[i].market;
+      const b = items[j].market;
+      const score = similarity(a.question,b.question);
+
+      if (score >= 0.30) {
+        pairs.push({a,b,score});
+      }
+    }
+  }
+
+  pairs.sort((x,y) => y.score - x.score);
+
+  if (!pairs.length) {
+    target.textContent = "Keine ausreichend ähnlichen Fragen gefunden.";
+    return;
+  }
+
+  target.innerHTML = pairs.slice(0,30).map(p => `
+    <div class="market">
+      <div class="small warn">
+        Textähnlichkeit: ${(p.score*100).toFixed(0)}%
+      </div>
+      <div class="question">A: ${escapeHTML(p.a.question)}</div>
+      <div class="question">B: ${escapeHTML(p.b.question)}</div>
+      <div class="small">
+        Bitte Ereignis, Zeitraum und Auflösungsregeln manuell vergleichen.
+      </div>
+    </div>
+  `).join("");
+}
+
+function renderMarkets(items) {
+  const target = $("marketResults");
+
+  items.sort((a,b) => b.volume - a.volume);
+
+  if (!items.length) {
+    target.textContent = "Keine vollständigen Marktdaten verfügbar.";
+    return;
+  }
+
+  target.innerHTML = items.slice(0,50).map(m => `
+    <div class="market">
+      <div class="question">${escapeHTML(m.question)}</div>
+      <div class="small">
+        YES Ask: ${m.yes === null ? "–" : (m.yes*100).toFixed(1)+"%"}
+        · NO Ask: ${m.no === null ? "–" : (m.no*100).toFixed(1)+"%"}<br>
+        24h Volumen: ${m.volume.toLocaleString("de-DE",{maximumFractionDigits:0})}
+        USDC<br>
+        Liquidität laut Marktdaten:
+        ${m.liquidity.toLocaleString("de-DE",{maximumFractionDigits:0})}
+      </div>
+    </div>
+  `).join("");
 }
 </script>
 </body>
 </html>
+
 
 
 
