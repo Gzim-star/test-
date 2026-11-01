@@ -1389,9 +1389,10 @@ document.getElementById('introPreviewOverlay')?.remove();
   if(currentIllusion === 'the-void') startRound5Void();
 
 if(currentIllusion === 'invisible-frames'){
-  setTimeout(() => { framesInvisible = true; }, 6000);
-   }
-  }
+  clearTimeout(invisibleFramesTimeout);
+  invisibleFramesTimeout = setTimeout(() => {
+    framesInvisible = true;
+  }, 6000);
 }
 
 
