@@ -404,14 +404,13 @@ function clearVoidTimers() {
 }
 
 function startRound5Void() {
-  if (round !== 5 || voidTriggeredForRound5) return;
-
+  if (currentIllusion !== 'the-void' || voidTriggeredForRound5) return;
+  
   voidTriggeredForRound5 = true;
 
   // Rund 10 Sekunden nach Beginn von Runde 5
   voidStartTimer = setTimeout(() => {
-    if (round !== 5 || !gameRunning) return;
-
+    if (currentIllusion !== 'the-void' || !gameRunning) return;
     // Nur die Sichtbarkeit verändern.
     // Die Spiellogik und Animation laufen weiter.
     gameElement.classList.add('void-hidden');
@@ -555,6 +554,16 @@ hintDisabled = (currentIllusion === 'hidden-letter');
 
   pulseActive = false;
   pulseTime = 0;
+  
+  if(fakePulseTimeout){
+  clearTimeout(fakePulseTimeout);
+  fakePulseTimeout = null;
+}
+
+  fakePulseActive = false;
+  fakePulseTriggered = false;
+  fakePulseTime = 0;
+  
   randomizeFrame();
   generateFakeFrames();
   triggerFakeFramePulse();
@@ -859,10 +868,9 @@ if(letters.toUpperCase() === targetWord){
   setTimeout(()=>{
   if(fakeFrameHit){
 
-  // Runde zurück
-  round = 6;
+  // Eine Runde zurück, aktuelle Illusion behalten
+  round = Math.max(1, round - 1);
   updateRoundDisplay();
-
   // Spielfeld reset
   arena.forEach(r => r.fill(null));
   clearHighlights();
@@ -884,7 +892,8 @@ if(letters.toUpperCase() === targetWord){
   if(targetFound){
 
   framesInvisible = false; // 🔧 Reset damit neue Runde wieder sichtbar ist
-      
+  round4InvisibleY = null;   
+  
   playNextRoundTone(); // 👈 HIER
   // Spielfeld leeren
   arena.forEach(r=>r.fill(null));
