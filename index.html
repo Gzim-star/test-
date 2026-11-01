@@ -4,192 +4,342 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>POLY BOT V3</title>
+<title>POLY BOT V3.1</title>
 <style>
 body{background:#090d13;color:#e8f0f8;font-family:Arial;padding:16px}
 h1{color:#00ffcc;letter-spacing:3px}
 button{background:#00ffcc;border:0;padding:14px;border-radius:8px;font-weight:bold}
-.card{background:#151e29;border:1px solid #293849;border-radius:10px;padding:14px;margin:12px 0}
-.good{color:#00ff99}.warn{color:#ffcc00}.muted{color:#9aabba}
+.card{background:#151e29;border:1px solid #293849;border-radius:10px;padding:14px;margin:12px 0;overflow-wrap:anywhere}
+.good{color:#00ff99}.warn{color:#ffcc00}.bad{color:#ff7777}
+.muted{color:#9aabba;font-size:13px}
 .big{font-size:25px;color:#00ffcc}
 </style>
 </head>
 <body>
 
-<h1>POLY BOT V3</h1>
-<p>STRICT ARBITRAGE DETECTOR</p>
+<h1>POLY BOT V3.1</h1>
+<p>STRICT ARBITRAGE · DIAGNOSTICS</p>
 <p class="muted">READ ONLY · NO WALLET · NO TRADES</p>
 
-<button onclick="scan()">START ARBITRAGE SCAN</button>
+<button onclick="scan()">START FULL SCAN</button>
 <p id="status">Scanner bereit.</p>
+<div id="summary"></div>
 <div id="results"></div>
+<div id="diagnostics"></div>
 
 <script>
 const API="https://gamma-api.polymarket.com";
 const CLOB="https://clob.polymarket.com";
 
 function parse(v){
- try{return typeof v==="string"?JSON.parse(v):v}
- catch(e){return []}
+  try{return typeof v==="string"?JSON.parse(v):v}
+  catch(e){return null}
 }
 
 async function get(url){
- const r=await fetch(url);
- if(!r.ok)throw Error("HTTP "+r.status);
- return r.json();
+  const r=await fetch(url);
+  if(!r.ok)throw Error("HTTP "+r.status);
+  return r.json();
 }
 
 async function book(token){
- return get(CLOB+"/book?token_id="+encodeURIComponent(token));
+  return get(CLOB+"/book?token_id="+encodeURIComponent(token));
 }
 
 async function fee(token){
- return get(CLOB+"/fee-rate?token_id="+encodeURIComponent(token));
+  return get(CLOB+"/fee-rate?token_id="+encodeURIComponent(token));
 }
 
-function bestAsk(book){
- const asks=(book.asks||[])
- .map(x=>({price:Number(x.price),size:Number(x.size)}))
- .filter(x=>x.price>0&&x.size>0)
- .sort((a,b)=>a.price-b.price);
+// Fee rate: feeRate is a decimal fraction.
+// Legacy base_fee is expressed in basis points.
+function readFee(data){
+  if(data && data.feeRate!==undefined)
+    return Number(data.feeRate);
 
- return asks[0]||null;
+  if(data && data.fee_rate!==undefined)
+    return Number(data.fee_rate);
+
+  if(data && data.base_fee!==undefined)
+    return Number(data.base_fee)/10000;
+
+  throw Error("Gebührenformat unbekannt");
 }
 
-function show(title,body){
- const card=document.createElement("div");
- card.className="card";
+function asks(book){
+  return (book.asks||[])
+    .map(x=>({
+      price:Number(x.price),
+      size:Number(x.size)
+    }))
+    .filter(x=>
+      Number.isFinite(x.price)&&
+      Number.isFinite(x.size)&&
+      x.price>0&&x.price<1&&x.size>0
+    )
+    .sort((a,b)=>a.price-b.price);
+}
 
- const h=document.createElement("h3");
- h.textContent=title;
+// Calculate the total purchase cost and fees
+// for a requested quantity across multiple levels.
+function sweep(levels,quantity,rate){
+  let remaining=quantity;
+  let cost=0;
+  let fees=0;
 
- const p=document.createElement("div");
- p.innerHTML=body;
+  for(const level of levels){
+    const take=Math.min(remaining,level.size);
 
- card.append(h,p);
- document.getElementById("results").append(card);
+    cost+=take*level.price;
+    fees+=take*rate*level.price*(1-level.price);
+
+    remaining-=take;
+
+    if(remaining<0.00000001)break;
+  }
+
+  if(remaining>0.00000001)return null;
+
+  return {cost,fees};
+}
+
+function depth(levels){
+  return levels.reduce((sum,x)=>sum+x.size,0);
+}
+
+function breakpoints(a,b){
+  const values=new Set();
+  let sum=0;
+
+  for(const level of a){
+    sum+=level.size;
+    values.add(sum);
+  }
+
+  sum=0;
+  for(const level of b){
+    sum+=level.size;
+    values.add(sum);
+  }
+
+  return [...values].sort((x,y)=>x-y);
+}
+
+function el(tag,cls,content){
+  const node=document.createElement(tag);
+  if(cls)node.className=cls;
+  node.textContent=content;
+  return node;
+}
+
+function card(title,lines,container,cls=""){
+  const box=el("div","card "+cls,"");
+  box.appendChild(el("h3","",title));
+
+  lines.forEach(line=>{
+    box.appendChild(el("p",line.cls||"",line.text));
+  });
+
+  container.appendChild(box);
 }
 
 async function scan(){
- const status=document.getElementById("status");
- const results=document.getElementById("results");
+  const status=document.getElementById("status");
+  const results=document.getElementById("results");
+  const summary=document.getElementById("summary");
+  const diagnostics=document.getElementById("diagnostics");
 
- results.innerHTML="";
- status.textContent="Lade Märkte...";
+  results.innerHTML="";
+  summary.innerHTML="";
+  diagnostics.innerHTML="";
 
- try{
-  const markets=await get(
-   API+"/markets?active=true&closed=false"+
-   "&limit=30&order=volume24hr&ascending=false"
-  );
+  const counts={
+    examined:0,
+    candidates:0,
+    invalid:0,
+    api:0,
+    fees:0,
+    liquidity:0,
+    noBook:0,
+    noEdge:0
+  };
 
-  let checked=0;
-  let candidates=0;
-  let skipped=0;
+  const reasons=[];
 
-  status.textContent="Prüfe echte Orderbücher...";
+  function problem(name,reason){
+    if(reasons.length<30)
+      reasons.push(name+": "+reason);
+  }
 
-  for(let i=0;i<markets.length;i+=3){
-   const batch=markets.slice(i,i+3);
+  try{
+    status.textContent="Lade Märkte...";
 
-   await Promise.all(batch.map(async m=>{
-    try{
-     const ids=parse(m.clobTokenIds);
-     const outcomes=parse(m.outcomes);
+    const markets=await get(
+      API+"/markets?active=true&closed=false"+
+      "&limit=30&order=volume24hr&ascending=false"
+    );
 
-     if(!Array.isArray(ids)||ids.length!==2||
-        !Array.isArray(outcomes)||outcomes.length!==2)
-       return;
+    for(let i=0;i<markets.length;i++){
+      const m=markets[i];
+      status.textContent=
+        "Untersuche Markt "+(i+1)+" von "+markets.length;
 
-     const yi=outcomes.findIndex(
-       x=>String(x).toLowerCase()==="yes");
-     const ni=outcomes.findIndex(
-       x=>String(x).toLowerCase()==="no");
+      try{
+        const ids=parse(m.clobTokenIds);
+        const outcomes=parse(m.outcomes);
 
-     if(yi<0||ni<0)return;
+        if(!Array.isArray(ids)||
+           !Array.isArray(outcomes)||
+           ids.length!==2||outcomes.length!==2){
+          counts.invalid++;
+          problem(m.question||"Unbekannter Markt",
+                  "Kein binärer YES/NO-Markt");
+          continue;
+        }
 
-     const [yb,nb,yf,nf]=await Promise.all([
-       book(ids[yi]),book(ids[ni]),
-       fee(ids[yi]),fee(ids[ni])
-     ]);
+        const yi=outcomes.findIndex(
+          x=>String(x).toLowerCase()==="yes");
+        const ni=outcomes.findIndex(
+          x=>String(x).toLowerCase()==="no");
 
-     checked++;
+        if(yi<0||ni<0){
+          counts.invalid++;
+          problem(m.question,"YES/NO-Zuordnung fehlt");
+          continue;
+        }
 
-     // Nur gebührenfreie Märkte zulassen.
-     if(Number(yf.base_fee)!==0||
-        Number(nf.base_fee)!==0){
-       skipped++;
-       return;
-     }
+        const [yb,nb,yf,nf]=await Promise.all([
+          book(ids[yi]),book(ids[ni]),
+          fee(ids[yi]),fee(ids[ni])
+        ]);
 
-     const ya=bestAsk(yb);
-     const na=bestAsk(nb);
+        counts.examined++;
 
-     if(!ya||!na)return;
+        const yr=readFee(yf);
+        const nr=readFee(nf);
 
-     // Beide Kaufseiten müssen ausreichend Liquidität haben.
-     const quantity=Math.min(ya.size,na.size);
-     const minimum=Math.max(
-       Number(yb.min_order_size||0),
-       Number(nb.min_order_size||0)
-     );
+        if(!Number.isFinite(yr)||!Number.isFinite(nr)||
+           yr<0||nr<0){
+          counts.fees++;
+          problem(m.question,"Ungültige Gebührenwerte");
+          continue;
+        }
 
-     if(quantity<minimum)return;
+        const ya=asks(yb);
+        const na=asks(nb);
 
-     const total=ya.price+na.price;
-     const edge=1-total;
+        if(!ya.length||!na.length){
+          counts.noBook++;
+          problem(m.question,"YES- oder NO-Orderbuch leer");
+          continue;
+        }
 
-     if(edge<=0)return;
+        const maxQty=Math.min(depth(ya),depth(na));
 
-     const investment=quantity*total;
-     const payout=quantity;
-     const profit=payout-investment;
+        const minimum=Math.max(
+          Number(yb.min_order_size||0),
+          Number(nb.min_order_size||0)
+        );
 
-     candidates++;
+        if(maxQty<minimum){
+          counts.liquidity++;
+          problem(m.question,"Zu wenig gemeinsame Liquidität");
+          continue;
+        }
 
-     show(
-       "THEORETISCHER ARBITRAGE-KANDIDAT",
-       '<p class="good">'+
-       m.question.replace(/</g,"&lt;")+
-       '</p>'+
-       '<p>YES Kaufpreis: '+ya.price.toFixed(4)+
-       ' $</p>'+
-       '<p>NO Kaufpreis: '+na.price.toFixed(4)+
-       ' $</p>'+
-       '<p>Gemeinsamer Kaufpreis: '+total.toFixed(4)+
-       ' $</p>'+
-       '<p class="big">+'+(edge*100).toFixed(2)+
-       '% Bruttomarge</p>'+
-       '<p>Gemeinsame Stückzahl: '+quantity.toFixed(4)+
-       '</p>'+
-       '<p>Kapitalbedarf: $'+investment.toFixed(4)+
-       '</p>'+
-       '<p class="good">Theoretischer Gewinn: $'+
-       profit.toFixed(4)+'</p>'+
-       '<p class="warn">Noch keine Ausführungsgarantie.</p>'
-     );
+        let best=null;
 
-    }catch(e){
-      skipped++;
+        for(const q of breakpoints(ya,na)){
+          if(q<minimum||q>maxQty)continue;
+
+          const yc=sweep(ya,q,yr);
+          const nc=sweep(na,q,nr);
+
+          if(!yc||!nc)continue;
+
+          const investment=
+            yc.cost+nc.cost+yc.fees+nc.fees;
+
+          const profit=q-investment;
+
+          if(!best||profit>best.profit){
+            best={q,investment,profit,
+                  yCost:yc.cost,nCost:nc.cost,
+                  fees:yc.fees+nc.fees};
+          }
+        }
+
+        if(!best||best.profit<=0){
+          counts.noEdge++;
+          problem(m.question,
+                  "Kein positiver Gewinn nach geschätzten Gebühren");
+          continue;
+        }
+
+        counts.candidates++;
+
+        card(
+          "ARBITRAGE-KANDIDAT",
+          [
+            {text:m.question,cls:"good"},
+            {text:"YES Gebührenrate: "+yr},
+            {text:"NO Gebührenrate: "+nr},
+            {text:"YES Kaufkosten: $"+best.yCost.toFixed(4)},
+            {text:"NO Kaufkosten: $"+best.nCost.toFixed(4)},
+            {text:"Geschätzte Gebühren: $"+best.fees.toFixed(4)},
+            {text:"Gemeinsame Stückzahl: "+best.q.toFixed(4)},
+            {text:"Kapitalbedarf: $"+best.investment.toFixed(4)},
+            {text:"Theoretischer Nettogewinn: +$"+
+              best.profit.toFixed(4),cls:"good"},
+            {text:"Nur theoretisch – keine Ausführungsgarantie.",
+              cls:"warn"}
+          ],
+          results
+        );
+
+      }catch(e){
+        const message=String(e.message||e);
+
+        if(message.includes("Gebührenformat")){
+          counts.fees++;
+        }else{
+          counts.api++;
+        }
+
+        problem(m.question||"Unbekannter Markt",message);
+      }
     }
-   }));
 
-   status.textContent=
-    "Geprüft: "+checked+
-    " | Kandidaten: "+candidates+
-    " | Übersprungen: "+skipped;
+    const totalSkipped=
+      counts.invalid+counts.api+counts.fees+
+      counts.liquidity+counts.noBook+counts.noEdge;
+
+    card(
+      "SCAN ERGEBNIS",
+      [
+        {text:"Geprüft: "+counts.examined},
+        {text:"Kandidaten: "+counts.candidates,cls:"good"},
+        {text:"Ungültige Märkte: "+counts.invalid},
+        {text:"API-Fehler: "+counts.api},
+        {text:"Gebührenprobleme: "+counts.fees},
+        {text:"Leere Orderbücher: "+counts.noBook},
+        {text:"Zu wenig Liquidität: "+counts.liquidity},
+        {text:"Kein Preisvorteil: "+counts.noEdge},
+        {text:"Übersprungene Märkte: "+totalSkipped}
+      ],
+      summary
+    );
+
+    card(
+      "DIAGNOSE – WARUM WURDE EIN MARKT ÜBERSPRUNGEN?",
+      reasons.map(x=>({text:x,cls:"muted"})),
+      diagnostics
+    );
+
+    status.textContent="Scan abgeschlossen.";
+
+  }catch(e){
+    status.textContent="Scanner-Fehler: "+e.message;
   }
-
-  if(candidates===0){
-   show("Keine Arbitrage gefunden",
-        "In den geprüften Märkten wurde keine passende Kombination gefunden.");
-  }
-
-  status.textContent+=" | Scan abgeschlossen.";
-
- }catch(e){
-  status.textContent="Fehler: "+e.message;
- }
 }
 </script>
 </body>
