@@ -942,57 +942,7 @@ if(currentIllusion === 'invisible-frames'){
 }
   // Neues Wort erzeugt auch neuen Original Frame
   newTargetWord();
-// Fake Frames neu erzeugen
-fakeFrames = [];
-let fakeCount = round - 1;
 
-// Array mit verfügbaren Farben kopieren
-let availableColors = [...COLORS];
-
-for(let i=0;i<fakeCount;i++){
-  let fx, fy;
-  let valid = false;
-
-  let attempts = 0;
-  let maxAttempts = 200;
-  
-  while(!valid && attempts < maxAttempts){
-  attempts++;
-    
-    fx = Math.floor(Math.random() * arena[0].length);
-    const minY = 5;
-    const maxY = arena.length - frameH;
-    fy = Math.floor(Math.random() * (maxY - minY)) + minY;
-
-    const overlapsOriginal =
-  fx === frameX &&
-  fy < frameY + frameH &&
-  fy + frameH > frameY;
-
-const overlapsFake = fakeFrames.some(f =>
-  f.x === fx &&
-  fy < f.y + frameH &&
-  fy + frameH > f.y
-);
-
-    if(!overlapsOriginal && !overlapsFake){
-      valid = true;
-    }
-  }
-
-  if(!valid) continue;   // 🔥 DAS FEHLT BEI DIR
-  // Zufällige Farbe auswählen und aus availableColors entfernen
-  let color = shuffledFrameColors[colorIndex];
-  colorIndex++;
-
-  if(colorIndex >= shuffledFrameColors.length){
-  shuffleFrameColors();
-}
-  fakeFrames.push({x: fx, y: fy, color: color});
-}
-fakePulseTriggered = false;
- triggerFakeFramePulse();
-  triggerOriginalFramePulse();
   return;
 }
     found.flat().forEach(([y,x])=>arena[y][x]=null);
