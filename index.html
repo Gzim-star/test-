@@ -3,183 +3,199 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>POLY BOT V2</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>POLY BOT V3</title>
 <style>
-body {
-  background:#090d13;color:#e8f0f8;
-  font-family:Arial,sans-serif;padding:16px
-}
+body{background:#090d13;color:#e8f0f8;font-family:Arial;padding:16px}
 h1{color:#00ffcc;letter-spacing:3px}
-button{background:#00ffcc;border:0;padding:13px;
-border-radius:7px;font-weight:bold}
-.card{background:#151e29;border:1px solid #293849;
-padding:14px;border-radius:10px;margin:12px 0}
-.price{color:#00ffcc}
-small{color:#9aabba}
-.tag{color:#ffcc00;font-size:12px}
+button{background:#00ffcc;border:0;padding:14px;border-radius:8px;font-weight:bold}
+.card{background:#151e29;border:1px solid #293849;border-radius:10px;padding:14px;margin:12px 0}
+.good{color:#00ff99}.warn{color:#ffcc00}.muted{color:#9aabba}
+.big{font-size:25px;color:#00ffcc}
 </style>
 </head>
 <body>
 
-<h1>POLY BOT V2</h1>
-<p>CROSS-MARKET DETECTOR</p>
-<button onclick="scan()">SCAN 100 MARKETS</button>
-<p id="status">Scanner bereit.</p>
+<h1>POLY BOT V3</h1>
+<p>STRICT ARBITRAGE DETECTOR</p>
+<p class="muted">READ ONLY · NO WALLET · NO TRADES</p>
 
-<h2>Ähnliche Märkte</h2>
+<button onclick="scan()">START ARBITRAGE SCAN</button>
+<p id="status">Scanner bereit.</p>
 <div id="results"></div>
 
 <script>
-const stop = new Set([
-"will","the","and","for","from","with","that",
-"this","what","when","who","how","does","is",
-"be","by","in","on","of","to","a","an","or",
-"before","after","than","over","under","reach"
-]);
+const API="https://gamma-api.polymarket.com";
+const CLOB="https://clob.polymarket.com";
 
-function parse(value) {
-  try {
-    return typeof value === "string"
-      ? JSON.parse(value) : value;
-  } catch(e) { return []; }
+function parse(v){
+ try{return typeof v==="string"?JSON.parse(v):v}
+ catch(e){return []}
 }
 
-function words(question) {
-  return new Set(
-    question.toLowerCase()
-      .replace(/[^a-z0-9 ]/g," ")
-      .split(/\s+/)
-      .filter(w => w.length > 2 && !stop.has(w))
+async function get(url){
+ const r=await fetch(url);
+ if(!r.ok)throw Error("HTTP "+r.status);
+ return r.json();
+}
+
+async function book(token){
+ return get(CLOB+"/book?token_id="+encodeURIComponent(token));
+}
+
+async function fee(token){
+ return get(CLOB+"/fee-rate?token_id="+encodeURIComponent(token));
+}
+
+function bestAsk(book){
+ const asks=(book.asks||[])
+ .map(x=>({price:Number(x.price),size:Number(x.size)}))
+ .filter(x=>x.price>0&&x.size>0)
+ .sort((a,b)=>a.price-b.price);
+
+ return asks[0]||null;
+}
+
+function show(title,body){
+ const card=document.createElement("div");
+ card.className="card";
+
+ const h=document.createElement("h3");
+ h.textContent=title;
+
+ const p=document.createElement("div");
+ p.innerHTML=body;
+
+ card.append(h,p);
+ document.getElementById("results").append(card);
+}
+
+async function scan(){
+ const status=document.getElementById("status");
+ const results=document.getElementById("results");
+
+ results.innerHTML="";
+ status.textContent="Lade Märkte...";
+
+ try{
+  const markets=await get(
+   API+"/markets?active=true&closed=false"+
+   "&limit=30&order=volume24hr&ascending=false"
   );
-}
 
-function compare(a,b) {
-  const common = [...a.words].filter(
-    w => b.words.has(w)
-  );
+  let checked=0;
+  let candidates=0;
+  let skipped=0;
 
-  const union = new Set([...a.words,...b.words]);
-  const similarity = common.length / union.size;
+  status.textContent="Prüfe echte Orderbücher...";
 
-  return {common,similarity};
-}
+  for(let i=0;i<markets.length;i+=3){
+   const batch=markets.slice(i,i+3);
 
-async function scan() {
-  const status = document.getElementById("status");
-  const results = document.getElementById("results");
+   await Promise.all(batch.map(async m=>{
+    try{
+     const ids=parse(m.clobTokenIds);
+     const outcomes=parse(m.outcomes);
 
-  results.innerHTML = "";
-  status.textContent = "Analysiere 100 Märkte...";
+     if(!Array.isArray(ids)||ids.length!==2||
+        !Array.isArray(outcomes)||outcomes.length!==2)
+       return;
 
-  try {
-    const response = await fetch(
-      "https://gamma-api.polymarket.com/markets" +
-      "?active=true&closed=false&limit=100" +
-      "&order=volume24hr&ascending=false"
-    );
+     const yi=outcomes.findIndex(
+       x=>String(x).toLowerCase()==="yes");
+     const ni=outcomes.findIndex(
+       x=>String(x).toLowerCase()==="no");
 
-    if (!response.ok) throw new Error("API Fehler");
+     if(yi<0||ni<0)return;
 
-    const data = await response.json();
+     const [yb,nb,yf,nf]=await Promise.all([
+       book(ids[yi]),book(ids[ni]),
+       fee(ids[yi]),fee(ids[ni])
+     ]);
 
-    const markets = data.map(m => {
-      const prices = parse(m.outcomePrices);
-      const outcomes = parse(m.outcomes);
+     checked++;
 
-      const yesIndex = outcomes.findIndex(
-        x => String(x).toLowerCase() === "yes"
-      );
+     // Nur gebührenfreie Märkte zulassen.
+     if(Number(yf.base_fee)!==0||
+        Number(nf.base_fee)!==0){
+       skipped++;
+       return;
+     }
 
-      if (yesIndex < 0 || !prices[yesIndex]) return null;
+     const ya=bestAsk(yb);
+     const na=bestAsk(nb);
 
-      return {
-        question:m.question,
-        yes:Number(prices[yesIndex]),
-        volume:Number(m.volume24hr || 0),
-        liquidity:Number(m.liquidityNum || 0),
-        words:words(m.question || "")
-      };
-    }).filter(m =>
-      m && Number.isFinite(m.yes) &&
-      m.words.size >= 2
-    );
+     if(!ya||!na)return;
 
-    const pairs = [];
+     // Beide Kaufseiten müssen ausreichend Liquidität haben.
+     const quantity=Math.min(ya.size,na.size);
+     const minimum=Math.max(
+       Number(yb.min_order_size||0),
+       Number(nb.min_order_size||0)
+     );
 
-    for(let i=0;i<markets.length;i++) {
-      for(let j=i+1;j<markets.length;j++) {
-        const a=markets[i], b=markets[j];
-        const c=compare(a,b);
+     if(quantity<minimum)return;
 
-        if(c.common.length < 2 ||
-           c.similarity < 0.25) continue;
+     const total=ya.price+na.price;
+     const edge=1-total;
 
-        pairs.push({
-          a,b,
-          common:c.common,
-          similarity:c.similarity,
-          difference:Math.abs(a.yes-b.yes)
-        });
-      }
+     if(edge<=0)return;
+
+     const investment=quantity*total;
+     const payout=quantity;
+     const profit=payout-investment;
+
+     candidates++;
+
+     show(
+       "THEORETISCHER ARBITRAGE-KANDIDAT",
+       '<p class="good">'+
+       m.question.replace(/</g,"&lt;")+
+       '</p>'+
+       '<p>YES Kaufpreis: '+ya.price.toFixed(4)+
+       ' $</p>'+
+       '<p>NO Kaufpreis: '+na.price.toFixed(4)+
+       ' $</p>'+
+       '<p>Gemeinsamer Kaufpreis: '+total.toFixed(4)+
+       ' $</p>'+
+       '<p class="big">+'+(edge*100).toFixed(2)+
+       '% Bruttomarge</p>'+
+       '<p>Gemeinsame Stückzahl: '+quantity.toFixed(4)+
+       '</p>'+
+       '<p>Kapitalbedarf: $'+investment.toFixed(4)+
+       '</p>'+
+       '<p class="good">Theoretischer Gewinn: $'+
+       profit.toFixed(4)+'</p>'+
+       '<p class="warn">Noch keine Ausführungsgarantie.</p>'
+     );
+
+    }catch(e){
+      skipped++;
     }
+   }));
 
-    pairs.sort((x,y) =>
-      y.similarity-x.similarity ||
-      y.difference-x.difference
-    );
-
-    status.textContent =
-      markets.length + " Märkte | " +
-      pairs.length + " ähnliche Paare gefunden.";
-
-    if(!pairs.length) {
-      results.textContent =
-        "Keine ausreichend ähnlichen Marktfragen gefunden.";
-      return;
-    }
-
-    pairs.slice(0,20).forEach(p => {
-      const card=document.createElement("div");
-      card.className="card";
-
-      const title=document.createElement("div");
-      title.className="tag";
-      title.textContent="MÖGLICHES MARKTPAAR";
-
-      const q1=document.createElement("p");
-      q1.textContent="A: "+p.a.question;
-
-      const v1=document.createElement("div");
-      v1.className="price";
-      v1.textContent="YES: "+(p.a.yes*100).toFixed(1)+"%";
-
-      const q2=document.createElement("p");
-      q2.textContent="B: "+p.b.question;
-
-      const v2=document.createElement("div");
-      v2.className="price";
-      v2.textContent="YES: "+(p.b.yes*100).toFixed(1)+"%";
-
-      const info=document.createElement("small");
-      info.textContent=
-        "Gemeinsame Begriffe: "+p.common.join(", ")+
-        " | Preisabstand: "+
-        (p.difference*100).toFixed(1)+" Prozentpunkte"+
-        " | Ähnlichkeit: "+
-        (p.similarity*100).toFixed(0)+"%";
-
-      card.append(title,q1,v1,q2,v2,info);
-      results.appendChild(card);
-    });
-
-  } catch(error) {
-    status.textContent="Fehler: "+error.message;
+   status.textContent=
+    "Geprüft: "+checked+
+    " | Kandidaten: "+candidates+
+    " | Übersprungen: "+skipped;
   }
+
+  if(candidates===0){
+   show("Keine Arbitrage gefunden",
+        "In den geprüften Märkten wurde keine passende Kombination gefunden.");
+  }
+
+  status.textContent+=" | Scan abgeschlossen.";
+
+ }catch(e){
+  status.textContent="Fehler: "+e.message;
+ }
 }
 </script>
 </body>
 </html>
+
+
 
 
 
