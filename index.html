@@ -3,568 +3,377 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Polymarket Scanner V4</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Polymarket Crypto Scanner V4.1</title>
 <style>
 *{box-sizing:border-box}
-body{
-  margin:0;padding:18px;background:#080d14;color:#e8f0fa;
-  font-family:Arial,sans-serif
-}
-main{max-width:950px;margin:auto}
-h1{color:#00e6b8;margin-bottom:5px}
-.sub{color:#8fa3b8;font-size:13px}
-button{
-  background:#00d6a8;color:#001b16;border:0;border-radius:8px;
-  padding:13px 20px;font-weight:bold;font-size:15px;cursor:pointer;
-  margin:15px 0
-}
+body{margin:0;padding:15px;background:#080d14;color:#e8f0fa;font-family:Arial}
+main{max-width:900px;margin:auto}
+h1{color:#00e6b8;font-size:25px}
+h2{font-size:17px}
+.sub,.small{color:#9aacc0;font-size:13px;line-height:1.6}
+.panel{background:#111b28;border:1px solid #26384b;border-radius:12px;padding:15px;margin:13px 0}
+button{background:#00d6a8;color:#001b16;border:0;border-radius:8px;padding:13px 20px;font-weight:bold;font-size:15px}
 button:disabled{opacity:.5}
-.panel{
-  background:#111b28;border:1px solid #26384b;border-radius:12px;
-  padding:15px;margin:12px 0
-}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .stat{background:#0b1420;padding:12px;border-radius:8px}
-.stat strong{display:block;font-size:23px;color:#00e6b8}
+.stat strong{display:block;font-size:22px;color:#00e6b8}
 .stat span{font-size:11px;color:#9aacc0}
-.market{
-  border-bottom:1px solid #26384b;padding:13px 0;
-  overflow-wrap:anywhere
-}
+.market{border-bottom:1px solid #26384b;padding:12px 0;overflow-wrap:anywhere}
 .market:last-child{border:0}
-.question{font-weight:bold;margin-bottom:8px}
-.small{font-size:12px;color:#9aacc0;line-height:1.6}
-.good{color:#00e6a8}
-.warn{color:#ffc857}
-.bad{color:#ff7777}
-.tag{
-  display:inline-block;padding:4px 7px;border-radius:5px;
-  background:#203247;font-size:11px;margin:3px 3px 3px 0
-}
-#status{color:#ffc857;min-height:20px;font-size:13px}
-h2{font-size:17px;margin:0 0 12px}
-footer{color:#71869d;font-size:11px;margin:25px 0}
-@media(max-width:500px){
-  body{padding:12px}
-  .stats{grid-template-columns:repeat(2,1fr)}
-}
+.question{font-weight:bold;margin-bottom:7px}
+.good{color:#00e6a8}.warn{color:#ffc857}.bad{color:#ff7777}
+.tag{display:inline-block;background:#203247;border-radius:5px;padding:4px 7px;font-size:11px;margin:3px}
+#status{color:#ffc857;font-size:13px;margin-top:10px}
+@media(max-width:480px){.stats{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
 <main>
-  <h1>POLYMARKET V4</h1>
-  <div class="sub">Market Scanner · Orderbuch · Gebühren · Ähnliche Märkte</div>
+<h1>POLYMARKET CRYPTO V4.1</h1>
+<div class="sub">BTC · ETH · SOL · XRP · Weitere Token</div>
 
-  <div class="panel">
-    <div class="small">
-      Read-only Analyse. Keine Trades, kein Wallet und keine privaten Schlüssel.
-    </div>
-    <button id="scanBtn" onclick="startScan()">START SCAN</button>
-    <div id="status">Bereit für den Scan.</div>
-  </div>
+<div class="panel">
+ <div class="small">Nur Krypto- und Token-Preismärkte. Read-only: keine Trades, kein Wallet.</div>
+ <button id="scanBtn" onclick="startScan()">START CRYPTO SCAN</button>
+ <div id="status">Bereit.</div>
+</div>
 
-  <div class="panel">
-    <h2>Scan-Ergebnis</h2>
-    <div class="stats">
-      <div class="stat"><strong id="total">0</strong><span>Märkte geladen</span></div>
-      <div class="stat"><strong id="checked">0</strong><span>Orderbücher geprüft</span></div>
-      <div class="stat"><strong id="candidates">0</strong><span>Arbitrage-Kandidaten</span></div>
-      <div class="stat"><strong id="invalid">0</strong><span>Ungültige Märkte</span></div>
-      <div class="stat"><strong id="empty">0</strong><span>Leere Orderbücher</span></div>
-      <div class="stat"><strong id="errors">0</strong><span>API-Fehler</span></div>
-    </div>
-  </div>
+<div class="panel">
+ <h2>Scan-Ergebnis</h2>
+ <div class="stats">
+  <div class="stat"><strong id="loaded">0</strong><span>Märkte geladen</span></div>
+  <div class="stat"><strong id="crypto">0</strong><span>Krypto-Märkte</span></div>
+  <div class="stat"><strong id="checked">0</strong><span>Orderbücher geprüft</span></div>
+  <div class="stat"><strong id="arb">0</strong><span>Mögliche Kandidaten</span></div>
+  <div class="stat"><strong id="empty">0</strong><span>Leere Bücher</span></div>
+  <div class="stat"><strong id="errors">0</strong><span>Fehler</span></div>
+ </div>
+</div>
 
-  <div class="panel">
-    <h2>1. Mögliche Arbitrage</h2>
-    <div class="small">
-      YES + NO werden zum verfügbaren Verkaufspreis (Ask) geprüft.
-      Gebühren und Orderbuch-Tiefe werden berücksichtigt.
-    </div>
-    <div id="arbResults" class="small">Noch keine Analyse.</div>
-  </div>
+<div class="panel">
+ <h2>1. Mögliche Arbitrage</h2>
+ <div id="arbResults" class="small">Noch kein Scan.</div>
+</div>
 
-  <div class="panel">
-    <h2>2. Ähnliche Märkte</h2>
-    <div class="small">
-      Ähnliche Formulierungen können auf zusammenhängende Ereignisse hinweisen.
-      Das ist ausdrücklich kein Arbitrage-Nachweis.
-    </div>
-    <div id="similarResults" class="small">Noch keine Analyse.</div>
-  </div>
+<div class="panel">
+ <h2>2. Krypto-Märkte nach Token</h2>
+ <div id="tokenResults" class="small">Noch kein Scan.</div>
+</div>
 
-  <div class="panel">
-    <h2>3. Marktübersicht</h2>
-    <div id="marketResults" class="small">Noch keine Analyse.</div>
-  </div>
+<div class="panel">
+ <h2>3. Ähnliche Preis-Märkte</h2>
+ <div id="similarResults" class="small">Noch kein Scan.</div>
+</div>
 
-  <footer>
-    V4 · Öffentliche Polymarket-Daten · Simulation only.
-    Preise und Orderbücher können sich jederzeit ändern.
-  </footer>
+<div class="panel">
+ <h2>4. Hinweise</h2>
+ <div class="small">
+  Ein ähnliches Preisziel ist kein Arbitrage-Nachweis.
+  Für einen echten Vergleich müssen Preisziel, Laufzeit,
+  Auflösungsregeln, Gebühren und ausführbare Orderbuch-Mengen übereinstimmen.
+ </div>
+</div>
 </main>
 
 <script>
-const GAMMA = "https://gamma-api.polymarket.com";
-const CLOB = "https://clob.polymarket.com";
+const GAMMA="https://gamma-api.polymarket.com";
+const CLOB="https://clob.polymarket.com";
 
-const $ = id => document.getElementById(id);
+const ASSETS=[
+ {name:"Bitcoin",symbol:"BTC",words:["bitcoin","btc"]},
+ {name:"Ethereum",symbol:"ETH",words:["ethereum","ether","eth"]},
+ {name:"Solana",symbol:"SOL",words:["solana","sol"]},
+ {name:"XRP",symbol:"XRP",words:["xrp","ripple"]},
+ {name:"Dogecoin",symbol:"DOGE",words:["dogecoin","doge"]},
+ {name:"BNB",symbol:"BNB",words:["binance coin","bnb"]},
+ {name:"Cardano",symbol:"ADA",words:["cardano","ada"]},
+ {name:"Chainlink",symbol:"LINK",words:["chainlink"]},
+ {name:"Avalanche",symbol:"AVAX",words:["avalanche","avax"]},
+ {name:"Sui",symbol:"SUI",words:["sui"]},
+ {name:"Toncoin",symbol:"TON",words:["toncoin","ton"]},
+ {name:"Polkadot",symbol:"DOT",words:["polkadot","dot"]}
+];
 
-function parseArray(value) {
-  if (Array.isArray(value)) return value;
-  if (typeof value === "string") {
-    try { return JSON.parse(value); } catch(e) {}
-  }
-  return [];
+const $=id=>document.getElementById(id);
+
+function arr(v){
+ if(Array.isArray(v))return v;
+ try{return JSON.parse(v||"[]")}catch(e){return []}
 }
-
-function number(value) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : 0;
+function num(v){const n=Number(v);return Number.isFinite(n)?n:0}
+function safe(v){
+ return String(v??"").replace(/[&<>"']/g,c=>({
+ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[c]));
 }
-
-function escapeHTML(value) {
-  return String(value ?? "").replace(/[&<>"']/g, c => ({
-    "&":"&amp;", "<":"&lt;", ">":"&gt;",
-    '"':"&quot;", "'":"&#39;"
-  }[c]));
+async function get(url){
+ const r=await fetch(url);
+ if(!r.ok)throw Error("HTTP "+r.status);
+ return r.json();
 }
-
-async function getJSON(url) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error("HTTP " + response.status);
-  return response.json();
+function detectAsset(m){
+ const text=(m.question+" "+(m.description||"")).toLowerCase();
+ for(const a of ASSETS){
+  for(const w of a.words){
+   const re=new RegExp("(^|[^a-z0-9])"+w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"([^a-z0-9]|$)","i");
+   if(re.test(text))return a;
+  }
+ }
+ return null;
 }
-
-function getOutcomeTokens(market) {
-  const outcomes = parseArray(market.outcomes);
-  const tokens = parseArray(market.clobTokenIds);
-
-  if (outcomes.length !== 2 || tokens.length !== 2) return null;
-
-  const yesIndex = outcomes.findIndex(x =>
-    String(x).toLowerCase() === "yes"
-  );
-  const noIndex = outcomes.findIndex(x =>
-    String(x).toLowerCase() === "no"
-  );
-
-  if (yesIndex < 0 || noIndex < 0) return null;
-
-  return {
-    yes: String(tokens[yesIndex]),
-    no: String(tokens[noIndex])
-  };
+function yesNo(m){
+ const o=arr(m.outcomes),t=arr(m.clobTokenIds);
+ if(o.length!==2||t.length!==2)return null;
+ const y=o.findIndex(x=>String(x).toLowerCase()==="yes");
+ const n=o.findIndex(x=>String(x).toLowerCase()==="no");
+ if(y<0||n<0)return null;
+ return {yes:String(t[y]),no:String(t[n])};
 }
-
-// Gebührenrate aus den Marktdaten oder dem öffentlichen Fee-Endpunkt.
-async function getFeeRate(market, tokenId) {
-  const schedule = market.feeSchedule;
-
-  if (schedule && schedule.rate !== undefined) {
-    return {
-      rate: number(schedule.rate),
-      exponent: schedule.exponent === undefined
-        ? 1 : number(schedule.exponent),
-      known: true
-    };
-  }
-
-  if (market.feesEnabled === false) {
-    return {rate:0, exponent:1, known:true};
-  }
-
-  const data = await getJSON(
-    CLOB + "/fee-rate?token_id=" + encodeURIComponent(tokenId)
-  );
-
-  if (data.feeRate !== undefined) {
-    return {rate:number(data.feeRate), exponent:1, known:true};
-  }
-
-  if (data.base_fee !== undefined) {
-    return {
-      rate:number(data.base_fee) / 10000,
-      exponent:1,
-      known:true
-    };
-  }
-
-  if (data.fee_rate !== undefined) {
-    return {
-      rate:number(data.fee_rate),
-      exponent:1,
-      known:true
-    };
-  }
-
-  return {rate:0, exponent:1, known:false};
+function asks(book){
+ return (book.asks||[]).map(x=>({
+  p:num(x.price),s:num(x.size)
+ })).filter(x=>x.p>0&&x.p<1&&x.s>0).sort((a,b)=>a.p-b.p);
 }
-
-function cleanAsks(book) {
-  return (book.asks || [])
-    .map(level => ({
-      price:number(level.price),
-      size:number(level.size)
-    }))
-    .filter(x => x.price > 0 && x.price < 1 && x.size > 0)
-    .sort((a,b) => a.price - b.price);
+async function fee(m,token){
+ if(m.feeSchedule&&m.feeSchedule.rate!==undefined){
+  return {rate:num(m.feeSchedule.rate),known:true};
+ }
+ if(m.feesEnabled===false)return {rate:0,known:true};
+ const d=await get(CLOB+"/fee-rate?token_id="+encodeURIComponent(token));
+ if(d.base_fee!==undefined)
+  return {rate:num(d.base_fee)/10000,known:true};
+ if(d.feeRate!==undefined)
+  return {rate:num(d.feeRate),known:true};
+ return {rate:0,known:false};
 }
-
-function cumulativeSizes(levels, maxQty) {
-  let total = 0;
-  const points = [];
-
-  for (const level of levels) {
-    total += level.size;
-    if (total > 0) points.push(Math.min(total, maxQty));
-    if (total >= maxQty) break;
-  }
-  return points;
+function leg(levels,qty,rate){
+ let remaining=qty,cost=0,fees=0;
+ for(const l of levels){
+  if(remaining<=0)break;
+  const take=Math.min(remaining,l.s);
+  cost+=take*l.p;
+  fees+=take*rate*l.p*(1-l.p);
+  remaining-=take;
+ }
+ if(remaining>0.000001)return null;
+ fees=Math.round(fees*100000)/100000;
+ return {cost,fees};
 }
+function evaluate(yes,no,fy,fn,minSize){
+ const ys=asks(yes),ns=asks(no);
+ if(!ys.length||!ns.length)return {empty:true};
+ let ysum=0,nsum=0,points=[];
+ for(const l of ys){ysum+=l.s;points.push(ysum)}
+ for(const l of ns){nsum+=l.s;points.push(nsum)}
+ points.push(20);
+ points=[...new Set(points.map(x=>Math.min(x,20)))]
+  .filter(x=>x>=Math.max(1,minSize)).sort((a,b)=>a-b);
+ let best=null;
+ for(const q of points){
+  const a=leg(ys,q,fy),b=leg(ns,q,fn);
+  if(!a||!b)continue;
+  const cost=a.cost+b.cost+a.fees+b.fees;
+  const profit=q-cost;
+  if(!best||profit>best.profit)
+   best={qty:q,cost,profit,average:cost/q};
+ }
+ return best||{empty:true};
+}
+function fmt(n){return Number(n).toLocaleString("de-DE",{maximumFractionDigits:5})}
 
-// Berechnet Kaufkosten für eine bestimmte Stückzahl.
-function calculateLeg(levels, qty, fee) {
-  let remaining = qty;
-  let cost = 0;
+let busy=false;
 
-  for (const level of levels) {
-    if (remaining <= 0) break;
+async function startScan(){
+ if(busy)return;
+ busy=true;
+ $("scanBtn").disabled=true;
+ $("status").textContent="Lade Krypto-Märkte ...";
 
-    const take = Math.min(remaining, level.size);
-    cost += take * level.price;
-    remaining -= take;
-  }
+ const stats={loaded:0,crypto:0,checked:0,arb:0,empty:0,errors:0};
+ const cryptoMarkets=[];
+ const candidates=[];
+ const marketGroups={};
 
-  if (remaining > 0.000001) return null;
-
-  let feeAmount = 0;
-
-  if (fee.rate > 0) {
-    for (const level of levels) {
-      // Gebühr auf die tatsächlich ausgeführte Menge
-      const take = Math.min(qty, level.size);
-      if (take <= 0) continue;
-
-      feeAmount += take * fee.rate *
-        level.price *
-        Math.pow(1 - level.price, fee.exponent);
-
-      qty -= take;
-      if (qty <= 0) break;
-    }
+ try{
+  // Drei Seiten à 100 Märkte abrufen.
+  let all=[];
+  for(let offset=0;offset<300;offset+=100){
+   const page=await get(
+    GAMMA+"/markets?active=true&closed=false&limit=100"+
+    "&offset="+offset+"&order=volume24hr&ascending=false"
+   );
+   all=all.concat(page);
+   if(page.length<100)break;
   }
 
-  // Polymarket rundet Gebühren auf 5 Dezimalstellen.
-  feeAmount = Math.round(feeAmount * 100000) / 100000;
+  stats.loaded=all.length;
+  $("loaded").textContent=stats.loaded;
 
-  return {cost, fee:feeAmount};
-}
-
-function evaluatePair(yesBook, noBook, yesFee, noFee) {
-  const yesAsks = cleanAsks(yesBook);
-  const noAsks = cleanAsks(noBook);
-
-  if (!yesAsks.length || !noAsks.length) {
-    return {empty:true};
+  for(const m of all){
+   const asset=detectAsset(m);
+   if(!asset)continue;
+   cryptoMarkets.push({m,asset});
   }
 
-  const maxQty = 50;
+  stats.crypto=cryptoMarkets.length;
+  $("crypto").textContent=stats.crypto;
 
-  const points = [
-    ...cumulativeSizes(yesAsks, maxQty),
-    ...cumulativeSizes(noAsks, maxQty),
-    maxQty
-  ];
+  $("status").textContent=
+   stats.crypto+" Krypto-Märkte gefunden. Prüfe Orderbücher ...";
 
-  const quantities = [...new Set(points)]
-    .filter(q => q > 0)
-    .sort((a,b) => a-b);
+  let index=0;
+  async function worker(){
+   while(index<cryptoMarkets.length){
+    const item=cryptoMarkets[index++];
+    const m=item.m,asset=item.asset;
+    const tokens=yesNo(m);
 
-  let best = null;
+    if(!tokens)continue;
 
-  for (const qty of quantities) {
-    const y = calculateLeg(yesAsks, qty, yesFee);
-    const n = calculateLeg(noAsks, qty, noFee);
+    try{
+     const [yb,nb,fy,fn]=await Promise.all([
+      get(CLOB+"/book?token_id="+encodeURIComponent(tokens.yes)),
+      get(CLOB+"/book?token_id="+encodeURIComponent(tokens.no)),
+      fee(m,tokens.yes),
+      fee(m,tokens.no)
+     ]);
 
-    if (!y || !n) continue;
+     stats.checked++;
+     const result=evaluate(
+      yb,nb,fy.rate,fn.rate,num(m.orderMinSize)||1
+     );
 
-    const totalCost = y.cost + n.cost + y.fee + n.fee;
-    const payout = qty;
-    const profit = payout - totalCost;
+     if(result.empty)stats.empty++;
+     else if(result.profit>0.0001&&fy.known&&fn.known){
+      stats.arb++;
+      candidates.push({
+       question:m.question,asset:asset.name,
+       slug:m.slug,...result
+      });
+     }
 
-    if (!best || profit > best.profit) {
-      best = {
-        qty,
-        totalCost,
-        payout,
-        profit,
-        averageCost:totalCost / qty,
-        yesFee:y.fee,
-        noFee:n.fee
-      };
-    }
+     if(!marketGroups[asset.symbol])marketGroups[asset.symbol]=[];
+     marketGroups[asset.symbol].push({
+      question:m.question,
+      slug:m.slug,
+      volume:num(m.volume24hr),
+      liquidity:num(m.liquidity),
+      end:m.endDate||"",
+      book:result.empty?null:result
+     });
+
+    }catch(e){stats.errors++}
+
+    $("checked").textContent=stats.checked;
+    $("arb").textContent=stats.arb;
+    $("empty").textContent=stats.empty;
+    $("errors").textContent=stats.errors;
+   }
   }
 
-  return best || {empty:true};
+  await Promise.all(Array.from(
+   {length:6},()=>worker()
+  ));
+
+  renderArb(candidates);
+  renderTokens(marketGroups);
+  renderSimilar(marketGroups);
+
+  $("status").textContent=
+   "Fertig: "+stats.crypto+" Krypto-Märkte gefunden, "+
+   stats.checked+" geprüft.";
+
+ }catch(e){
+  $("status").textContent="Fehler: "+e.message;
+ }finally{
+  busy=false;
+  $("scanBtn").disabled=false;
+ }
 }
 
-// Ähnlichkeit der Fragestellungen – nur ein Hinweis, keine Logikprüfung.
-const STOPWORDS = new Set([
-  "will","the","be","to","of","in","on","a","an","is","by",
-  "for","and","or","with","at","from","this","that","it",
-  "2026","2027","2028","what","when","who","how"
-]);
-
-function words(text) {
-  return String(text || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]/g," ")
-    .split(/\s+/)
-    .filter(w => w.length > 2 && !STOPWORDS.has(w));
+function renderArb(list){
+ list.sort((a,b)=>b.profit-a.profit);
+ if(!list.length){
+  $("arbResults").innerHTML=
+   '<span class="warn">Keine möglichen Kandidaten gefunden.</span>';
+  return;
+ }
+ $("arbResults").innerHTML=list.map(x=>`
+  <div class="market">
+   <span class="tag good">${safe(x.asset)}</span>
+   <div class="question">${safe(x.question)}</div>
+   Menge: ${fmt(x.qty)} Shares<br>
+   Gesamtkosten inkl. geschätzter Gebühren: ${fmt(x.cost)} USDC<br>
+   Möglicher Überschuss: <b class="good">${fmt(x.profit)} USDC</b>
+  </div>
+ `).join("");
 }
 
-function similarity(a,b) {
-  const A = new Set(words(a));
-  const B = new Set(words(b));
-  if (!A.size || !B.size) return 0;
-
-  let common = 0;
-  for (const w of A) if (B.has(w)) common++;
-
-  return common / (A.size + B.size - common);
-}
-
-async function worker(items, limit, task) {
-  let index = 0;
-
-  const workers = Array.from(
-    {length:Math.min(limit,items.length)},
-    async () => {
-      while (index < items.length) {
-        const current = items[index++];
-        await task(current);
-      }
-    }
-  );
-
-  await Promise.all(workers);
-}
-
-let scanning = false;
-
-async function startScan() {
-  if (scanning) return;
-
-  scanning = true;
-  $("scanBtn").disabled = true;
-  $("status").textContent = "Lade bis zu 100 Märkte ...";
-
-  $("arbResults").textContent = "Analyse läuft ...";
-  $("similarResults").textContent = "Analyse läuft ...";
-  $("marketResults").textContent = "Analyse läuft ...";
-
-  const stats = {
-    total:0, checked:0, candidates:0,
-    invalid:0, empty:0, errors:0
-  };
-
-  const arbitrage = [];
-  const marketData = [];
-  const validMarkets = [];
-
-  try {
-    const markets = await getJSON(
-      GAMMA +
-      "/markets?active=true&closed=false&limit=100" +
-      "&order=volume24hr&ascending=false"
-    );
-
-    stats.total = markets.length;
-    $("total").textContent = stats.total;
-
-    for (const market of markets) {
-      const tokens = getOutcomeTokens(market);
-
-      if (!tokens || !market.question) {
-        stats.invalid++;
-        continue;
-      }
-
-      validMarkets.push({market,tokens});
-    }
-
-    $("invalid").textContent = stats.invalid;
-    $("status").textContent =
-      validMarkets.length + " Märkte werden untersucht ...";
-
-    await worker(validMarkets, 6, async item => {
-      const {market,tokens} = item;
-
-      try {
-        const [yesBook,noBook,yesFee,noFee] = await Promise.all([
-          getJSON(CLOB + "/book?token_id=" +
-            encodeURIComponent(tokens.yes)),
-          getJSON(CLOB + "/book?token_id=" +
-            encodeURIComponent(tokens.no)),
-          getFeeRate(market,tokens.yes),
-          getFeeRate(market,tokens.no)
-        ]);
-
-        stats.checked++;
-
-        if (!yesFee.known || !noFee.known) {
-          stats.errors++;
-          return;
-        }
-
-        const result = evaluatePair(
-          yesBook,noBook,yesFee,noFee
-        );
-
-        if (result.empty) {
-          stats.empty++;
-        } else if (result.profit > 0.0001) {
-          stats.candidates++;
-
-          arbitrage.push({
-            question:market.question,
-            slug:market.slug,
-            ...result
-          });
-        }
-
-        marketData.push({
-          question:market.question,
-          volume:number(market.volume24hr),
-          liquidity:number(market.liquidity),
-          yes:cleanAsks(yesBook)[0]?.price ?? null,
-          no:cleanAsks(noBook)[0]?.price ?? null
-        });
-
-      } catch(error) {
-        stats.errors++;
-      }
-
-      $("checked").textContent = stats.checked;
-      $("candidates").textContent = stats.candidates;
-      $("empty").textContent = stats.empty;
-      $("errors").textContent = stats.errors;
-    });
-
-    renderArbitrage(arbitrage);
-    renderSimilar(validMarkets);
-    renderMarkets(marketData);
-
-    $("status").textContent =
-      "Scan abgeschlossen. " + stats.total +
-      " Märkte geladen, " + stats.checked +
-      " geprüft.";
-
-  } catch(error) {
-    $("status").textContent =
-      "Fehler beim Laden: " + error.message;
-  } finally {
-    scanning = false;
-    $("scanBtn").disabled = false;
-  }
-}
-
-function renderArbitrage(results) {
-  const target = $("arbResults");
-
-  if (!results.length) {
-    target.innerHTML =
-      '<div class="warn">Keine Kandidaten gefunden. ' +
-      'Das bedeutet nicht, dass es auf ganz Polymarket keine gibt.</div>';
-    return;
-  }
-
-  results.sort((a,b) => b.profit - a.profit);
-
-  target.innerHTML = results.map(r => `
-    <div class="market">
-      <div class="question">${escapeHTML(r.question)}</div>
-      <span class="tag good">Möglicher Kandidat</span>
+function renderTokens(groups){
+ const symbols=Object.keys(groups);
+ if(!symbols.length){
+  $("tokenResults").textContent=
+   "Keine passenden Krypto-Märkte in den geladenen Seiten gefunden.";
+  return;
+ }
+ $("tokenResults").innerHTML=symbols.map(symbol=>{
+  const list=groups[symbol].sort((a,b)=>b.volume-a.volume);
+  const asset=ASSETS.find(a=>a.symbol===symbol);
+  return `
+   <div class="market">
+    <h2>${safe(asset.name)} (${safe(symbol)}) · ${list.length} Märkte</h2>
+    ${list.slice(0,20).map(m=>`
+     <div class="market">
+      <div class="question">${safe(m.question)}</div>
       <div class="small">
-        Menge: ${r.qty.toFixed(2)} Shares<br>
-        Geschätzte Gesamtkosten: ${r.totalCost.toFixed(5)} USDC<br>
-        Auszahlung bei vollständiger Abwicklung: ${r.payout.toFixed(2)} USDC<br>
-        Geschätzter Überschuss: 
-        <strong class="good">${r.profit.toFixed(5)} USDC</strong><br>
-        Durchschnittskosten je YES+NO-Paar:
-        ${r.averageCost.toFixed(5)} USDC
+       24h Volumen: ${fmt(m.volume)} USDC ·
+       Liquidität: ${fmt(m.liquidity)} USDC
       </div>
-    </div>
-  `).join("");
+     </div>
+    `).join("")}
+   </div>
+  `;
+ }).join("");
 }
 
-function renderSimilar(items) {
-  const target = $("similarResults");
-  const pairs = [];
-
-  // Maximal 100 Märkte: Vergleich aller unterschiedlichen Paare.
-  for (let i=0; i<items.length; i++) {
-    for (let j=i+1; j<items.length; j++) {
-      const a = items[i].market;
-      const b = items[j].market;
-      const score = similarity(a.question,b.question);
-
-      if (score >= 0.30) {
-        pairs.push({a,b,score});
-      }
-    }
+function renderSimilar(groups){
+ const pairs=[];
+ for(const symbol of Object.keys(groups)){
+  const list=groups[symbol];
+  for(let i=0;i<list.length;i++){
+   for(let j=i+1;j<list.length;j++){
+    const a=list[i],b=list[j];
+    const common=a.question.toLowerCase().split(/\W+/)
+     .filter(w=>w.length>2&&b.question.toLowerCase().includes(w));
+    const score=common.length/
+     Math.max(1,new Set(a.question.toLowerCase().split(/\W+/)).size);
+    if(score>=0.35)pairs.push({symbol,a,b,score});
+   }
   }
-
-  pairs.sort((x,y) => y.score - x.score);
-
-  if (!pairs.length) {
-    target.textContent = "Keine ausreichend ähnlichen Fragen gefunden.";
-    return;
-  }
-
-  target.innerHTML = pairs.slice(0,30).map(p => `
-    <div class="market">
-      <div class="small warn">
-        Textähnlichkeit: ${(p.score*100).toFixed(0)}%
-      </div>
-      <div class="question">A: ${escapeHTML(p.a.question)}</div>
-      <div class="question">B: ${escapeHTML(p.b.question)}</div>
-      <div class="small">
-        Bitte Ereignis, Zeitraum und Auflösungsregeln manuell vergleichen.
-      </div>
-    </div>
-  `).join("");
-}
-
-function renderMarkets(items) {
-  const target = $("marketResults");
-
-  items.sort((a,b) => b.volume - a.volume);
-
-  if (!items.length) {
-    target.textContent = "Keine vollständigen Marktdaten verfügbar.";
-    return;
-  }
-
-  target.innerHTML = items.slice(0,50).map(m => `
-    <div class="market">
-      <div class="question">${escapeHTML(m.question)}</div>
-      <div class="small">
-        YES Ask: ${m.yes === null ? "–" : (m.yes*100).toFixed(1)+"%"}
-        · NO Ask: ${m.no === null ? "–" : (m.no*100).toFixed(1)+"%"}<br>
-        24h Volumen: ${m.volume.toLocaleString("de-DE",{maximumFractionDigits:0})}
-        USDC<br>
-        Liquidität laut Marktdaten:
-        ${m.liquidity.toLocaleString("de-DE",{maximumFractionDigits:0})}
-      </div>
-    </div>
-  `).join("");
+ }
+ pairs.sort((a,b)=>b.score-a.score);
+ if(!pairs.length){
+  $("similarResults").textContent=
+   "Noch keine ähnlichen Preis-Märkte gefunden.";
+  return;
+ }
+ $("similarResults").innerHTML=pairs.slice(0,25).map(p=>`
+  <div class="market">
+   <span class="tag">${safe(p.symbol)}</span>
+   <div class="small warn">Textähnlichkeit: ${(p.score*100).toFixed(0)}%</div>
+   <div class="question">A: ${safe(p.a.question)}</div>
+   <div class="question">B: ${safe(p.b.question)}</div>
+   <div class="small">
+    Vergleich von Preisziel, Zeitraum und Auflösungsregeln erforderlich.
+   </div>
+  </div>
+ `).join("");
 }
 </script>
 </body>
 </html>
+
 
 
 
