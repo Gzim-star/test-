@@ -503,6 +503,56 @@ const fakeFrameColors = [
   //'#ff3b3b'   // 1
 ]; 
 
+// ===== THE COLOR LIE =====
+const colorLiePalette = [
+  '#ff3b3b',
+  '#ff8c00',
+  '#ffd700',
+  '#ffff00',
+  '#bfff00',
+  '#00ff00',
+  '#00ff7f',
+  '#00ffaa',
+  '#00ffff',
+  '#00bfff',
+  '#0080ff',
+  '#0000ff',
+  '#4b00ff',
+  '#8000ff',
+  '#bf00ff',
+  '#ff00ff',
+  '#ff00aa',
+  '#ff0066',
+  '#ff1493',
+  '#ff4500',
+  '#ff6347',
+  '#ffa500',
+  '#adff2f',
+  '#7fff00',
+  '#40e0d0',
+  '#1e90ff',
+  '#6a5acd',
+  '#9932cc',
+  '#ff69b4',
+  '#ffffff'
+];
+
+function activateColorLie() {
+  if (getIllusionRound() !== 2) return;
+
+  // Zufällige Farbe für den Originalrahmen
+  frameColor = colorLiePalette[
+    Math.floor(Math.random() * colorLiePalette.length)
+  ];
+
+  // Zufällige Farbe für jeden Fake-Rahmen
+  fakeFrames.forEach(f => {
+    f.color = colorLiePalette[
+      Math.floor(Math.random() * colorLiePalette.length)
+    ];
+  });
+}
+  
 let shuffledFrameColors = [];
 let colorIndex = 0;
 
@@ -529,6 +579,7 @@ hintDisabled = (getIllusionRound() === 4);
 
   randomizeFrame();
   generateFakeFrames();
+  activateColorLie();
   // Alten Timer stoppen
   if(colorShiftTimeout){
     clearTimeout(colorShiftTimeout);
@@ -686,7 +737,8 @@ function triggerColorShift(){
 }
 
 function triggerColorShiftIllusion(){
-
+  
+  if(getIllusionRound() === 2) return;
   if(round <= 1) return;
   if(colorShiftIllusionTriggered) return;
   colorShiftIllusionTriggered = true;
@@ -721,7 +773,7 @@ function triggerColorShiftIllusion(){
 
   const illusion = getIllusionRound();
 
-  if(illusion !== 2 && illusion !== 5) return;
+  if(illusion !== 5) return;
   if(fakePulseTriggered) return;
   if(fakeFrames.length === 0) return;
 
