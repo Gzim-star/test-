@@ -316,21 +316,18 @@ let frameH = 10; // Höhe fix
 let round = 1;
 const maxRounds = 10;
 // ===== RANDOM ILLUSION SYSTEM =====
-let illusionOrder = [1,2,3,4,5,6,7,8,9,10];
-
 function shuffleIllusions() {
   illusionOrder = [1,2,3,4,5,6,7,8,9,10];
 
-  for (let i = illusionOrder.length - 1; i > 0; i--) {
+  let rest = [2,3,4,5,6,7,8,9,10];
+
+  for (let i = rest.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
 
-    [illusionOrder[i], illusionOrder[j]] =
-    [illusionOrder[j], illusionOrder[i]];
+    [rest[i], rest[j]] = [rest[j], rest[i]];
   }
-}
 
-function getIllusionRound() {
-  return illusionOrder[round - 1] || round;
+  illusionOrder = [1, ...rest];
 }
 function updateRoundDisplay() {
   const display = document.getElementById('roundDisplay');
