@@ -889,7 +889,7 @@ if(getIllusionRound() === 6){
   // Original-Farbe für den aktuellen Frame aktualisieren
     frameColor = originalFrameColors[getIllusionRound() - 1] || '#ffffff';
   // 🧠 Geschwindigkeit pro Runde erhöhen
-    dropInterval = Math.max(200, 700 - (round * 60));
+    dropInterval = Math.max(600, 700 - (round * 60));
   // Pulse nur ab Runde 2
 if(getIllusionRound() > 1){
   pulseActive = true;
