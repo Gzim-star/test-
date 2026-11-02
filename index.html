@@ -315,6 +315,23 @@ let frameH = 10; // Höhe fix
 // 🟫 FAKE FRAMES SYSTEM
 let round = 1;
 const maxRounds = 10;
+// ===== RANDOM ILLUSION SYSTEM =====
+let illusionOrder = [1,2,3,4,5,6,7,8,9,10];
+
+function shuffleIllusions() {
+  illusionOrder = [1,2,3,4,5,6,7,8,9,10];
+
+  for (let i = illusionOrder.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+
+    [illusionOrder[i], illusionOrder[j]] =
+    [illusionOrder[j], illusionOrder[i]];
+  }
+}
+
+function getIllusionRound() {
+  return illusionOrder[round - 1] || round;
+}
 function updateRoundDisplay() {
   const display = document.getElementById('roundDisplay');
   if(display) display.textContent = round + '/' + maxRounds;
@@ -364,13 +381,13 @@ function clearVoidTimers() {
 }
 
 function startRound5Void() {
-  if (round !== 5 || voidTriggeredForRound5) return;
+  if (getIllusionRound() !== 5 || voidTriggeredForRound5) return;
 
   voidTriggeredForRound5 = true;
 
   // Rund 10 Sekunden nach Beginn von Runde 5
   voidStartTimer = setTimeout(() => {
-    if (round !== 5 || !gameRunning) return;
+    if (getIllusionRound() !== 5 || !gameRunning) return;
 
     // Nur die Sichtbarkeit verändern.
     // Die Spiellogik und Animation laufen weiter.
@@ -449,7 +466,7 @@ const originalFrameColors = [
   //'#ffffff'   // 30 Weiß (Final Flash)
 ];
 // 🎨 aktuelle Farbe des Original-Rahmens
-let frameColor = originalFrameColors[round - 1];
+let frameColor = originalFrameColors[getIllusionRound() - 1] || '#ffffff';
 
 const fakeFrameColors = [
   '#ffffff',  // 30
@@ -501,11 +518,11 @@ function newTargetWord() {
   frameH = targetWord.length < 10 ? targetWord.length : 10;
 
 // Hint in Runde 4 deaktivieren
-hintDisabled = (round === 4);
+hintDisabled = (getIllusionRound() === 4);
   
   if(!hintRevealed){
     document.getElementById('wordHint').textContent =
-      getMaskedWord(targetWord, round);
+      getMaskedWord(targetWord, getIllusionRound());
   }
 
   randomizeFrame();
@@ -563,7 +580,7 @@ function revealHint(){
   hintRevealed = true;
   const hintEl = document.getElementById('wordHint');
 
-  if(round === 9){
+  if(getIllusionRound() === 9){
     // 🎭 Fake Hint zuerst
     const fakeWord = getFakeWord(targetWord);
     hintEl.textContent = fakeWord;
@@ -574,7 +591,7 @@ function revealHint(){
 
       setTimeout(() => {
         // Wieder maskieren
-        hintEl.textContent = getMaskedWord(targetWord, round);
+        hintEl.textContent = getMaskedWord(targetWord, getIllusionRound());
         hintRevealed = false;
       }, 2000);
 
@@ -598,7 +615,7 @@ function randomizeFrame() {
 
 function generateFakeFrames() {
   fakeFrames = [];
-  let fakeCount = round - 1;
+  let fakeCount = getIllusionRound() - 1;
   let availableColors = [...COLORS];
 
   for(let i=0;i<fakeCount;i++){
@@ -648,7 +665,7 @@ function generateFakeFrames() {
   
 function triggerColorShift(){
 
-  if(round <= 1) return;
+  if(getIllusionRound() <= 1) return;
   if(colorShiftFakeTriggered) return;
 
   colorShiftFakeTriggered = true;
@@ -700,7 +717,9 @@ function triggerColorShiftIllusion(){
 
  function triggerFakeFramePulse() {
 
-  if(round !== 2 && round !== 5) return;
+  const illusion = getIllusionRound();
+
+  if(illusion !== 2 && illusion !== 5) return;
   if(fakePulseTriggered) return;
   if(fakeFrames.length === 0) return;
 
@@ -716,7 +735,9 @@ function triggerColorShiftIllusion(){
   
 function triggerOriginalFramePulse() {
 
-  if(round !== 3 && round !== 5) return;
+  const illusion = getIllusionRound();
+
+  if(illusion !== 3 && illusion !== 5) return;
 
   setTimeout(() => {
     pulseActive = true;
@@ -734,7 +755,7 @@ function merge(arena, player) {
   arena[player.pos.y][player.pos.x] = player.letter; 
 
   // Runde 4 Trick
-  if(round === 4){
+  if(getIllusionRound() === 4){
     const secondFromBottom = frameY + frameH - 2;
 
     if(player.pos.x === frameX && player.pos.y === secondFromBottom){
@@ -771,7 +792,7 @@ if(letters.toUpperCase() === targetWord){
     )
   );
 
-  if(round === 10){
+  if(getIllusionRound() === 10){
 
   // In Runde 10 darf das Wort NICHT im Rahmen sein
   if(!inOriginalFrame && !inFakeFrame){
@@ -779,7 +800,7 @@ if(letters.toUpperCase() === targetWord){
   }
 
 }
-else if(round === 8){
+else if(getIllusionRound() === 8){
     // In Runde 8 ist nur der Fake Frame korrekt
     if(inFakeFrame){
         targetFound = true;       // Fake Frame = korrekt
@@ -792,7 +813,7 @@ else if(round === 8){
         targetFound = true;
     }
 
-    if(inFakeFrame && round === 7){
+    if(inFakeFrame && getIllusionRound() === 7){
         fakeFrameHit = true;
     }
   }
@@ -805,7 +826,7 @@ else if(round === 8){
   if(fakeFrameHit){
 
   // Runde zurück
-  round = 6;
+  round = Math.max(1, round - 1);
   updateRoundDisplay();
 
   // Spielfeld reset
@@ -816,7 +837,7 @@ else if(round === 8){
   resetPlayer();
 
   // Rahmenfarbe zurücksetzen
-  frameColor = originalFrameColors[round - 1];
+  frameColor = originalFrameColors[getIllusionRound() - 1] || '#ffffff';
 
   // Neue Frames erzeugen
   fakeFrames = [];
@@ -850,13 +871,13 @@ if(round > maxRounds){
   updateRoundDisplay();
 
 // Runde 5: THE VOID nach ca. 10 Sekunden planen
-
-if (round === 5) {
+if (getIllusionRound() === 5) {
   startRound5Void();
 }
 
+
 // Runde 6 Spezialeffekt
-if(round === 6){
+if(getIllusionRound() === 6){
   setTimeout(()=>{
     framesInvisible = true;
    },6000);
@@ -864,20 +885,22 @@ if(round === 6){
     colorShiftFakeTriggered = false;
     colorShiftIllusionTriggered = false;
   // Original-Farbe für den aktuellen Frame aktualisieren
-    frameColor = originalFrameColors[round - 1] || '#ffffff';
+    frameColor = originalFrameColors[getIllusionRound() - 1] || '#ffffff';
   // 🧠 Geschwindigkeit pro Runde erhöhen
     dropInterval = Math.max(200, 700 - (round * 60));
   // Pulse nur ab Runde 2
-if(round > 1){
+if(getIllusionRound() > 1){
   pulseActive = true;
   pulseTime = 0;
 }
   // Neues Wort erzeugt auch neuen Original Frame
   newTargetWord();
 // Fake Frames neu erzeugen
-fakeFrames = [];
-let fakeCount = round - 1;
+fakePulseTriggered = false;
+fakePulseActive = false;
 
+triggerFakeFramePulse();
+triggerOriginalFramePulse();
 // Array mit verfügbaren Farben kopieren
 let availableColors = [...COLORS];
 
@@ -1305,7 +1328,7 @@ arena.forEach((row,y)=>{
     if(v){ 
 
       // Runde 4 Buchstabe unsichtbar
-      if(round === 4 && x === frameX && y === round4InvisibleY){
+      if(getIllusionRound() === 4 && x === frameX && y === round4InvisibleY){
         return;
       }
 
@@ -1356,7 +1379,7 @@ document.getElementById('introPreviewOverlay')?.remove();
   }
   // Startet das Spiel
   if(!gameRunning){
-    
+    shuffleIllusions();
     shuffleFrameColors();   // 👈 HIER EINFÜGEN
     colorIndex = 0;
     
@@ -1389,7 +1412,7 @@ function restartGame() {
 
   arena.forEach(r => r.fill(null));
   clearHighlights();
-
+  shuffleIllusions();
   shuffleFrameColors();
   colorIndex = 0;
 
@@ -1427,7 +1450,7 @@ const messages = [
 
 setInterval(()=>{
 
-  if(round === 6 && !mindMessageShown){
+  if(getIllusionRound() === 6 && !mindMessageShown){
 
     const msg = document.getElementById("mindMessage");
 
