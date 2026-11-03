@@ -537,58 +537,20 @@ const colorLiePalette = [
   '#ffffff'
 ];
 
-let colorLieTimeout = null;
-let colorLieTriggered = false;
-
 function activateColorLie() {
   if (getIllusionRound() !== 2) return;
 
-  colorLieTriggered = false;
-
-  if (colorLieTimeout) {
-    clearTimeout(colorLieTimeout);
-  }
-
-  colorLieTimeout = setTimeout(() => {
-    if (!gameRunning || getIllusionRound() !== 2) return;
-    if (colorLieTriggered) return;
-
-    colorLieTriggered = true;
-    triggerColorLieSwap();
-
-  }, 5000);
-}
-
-function triggerColorLieSwap() {
-  const allFrames = [
-    { isOriginal: true, color: frameColor },
-    ...fakeFrames
+  // Zufällige Farbe für den Originalrahmen
+  frameColor = colorLiePalette[
+    Math.floor(Math.random() * colorLiePalette.length)
   ];
 
-  if (allFrames.length < 2) return;
-
-  const colors = allFrames.map(f => f.color);
-
-  // Farben einmal zufällig untereinander tauschen
-  for (let i = colors.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [colors[i], colors[j]] = [colors[j], colors[i]];
-  }
-
-  frameColor = colors[0];
-
-  fakeFrames.forEach((f, i) => {
-    f.color = colors[i + 1];
+  // Zufällige Farbe für jeden Fake-Rahmen
+  fakeFrames.forEach(f => {
+    f.color = colorLiePalette[
+      Math.floor(Math.random() * colorLiePalette.length)
+    ];
   });
-}
-
-function resetColorLie() {
-  if (colorLieTimeout) {
-    clearTimeout(colorLieTimeout);
-    colorLieTimeout = null;
-  }
-
-  colorLieTriggered = false;
 }
   
 let shuffledFrameColors = [];
