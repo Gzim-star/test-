@@ -162,6 +162,23 @@ canvas {
   opacity: 0 !important;
   pointer-events: none !important;
 }
+/* ===== ONE RED FLASH ===== */
+body.wrong-answer-flash::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 0, 0, 0.75);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10000;
+  animation: wrongAnswerFlash 220ms ease-out;
+}
+
+@keyframes wrongAnswerFlash {
+  0%, 100% { opacity: 0; }
+  25% { opacity: 1; }
+  60% { opacity: 0; }
+}
 
 </style>
 </head>
@@ -863,6 +880,15 @@ function triggerOriginalFramePulse() {
 
 }  
   /* ===== GAME LOGIC ===== */
+function flashWrongAnswer() {
+  const body = document.body;
+
+  body.classList.remove('wrong-answer-flash');
+
+  void body.offsetWidth;
+
+  body.classList.add('wrong-answer-flash');
+}
 function collide(arena, player) {
   const { x, y } = player.pos;
   return y >= arena.length || x < 0 || x >= arena[0].length || arena[y][x] !== null;
@@ -939,6 +965,10 @@ else if(getIllusionRound() === 8){
     group.forEach(([y,x])=>highlights[y][x]=color);
   });
 
+  if(!targetFound){
+    flashWrongAnswer();
+  }
+  
   setTimeout(()=>{
   if(fakeFrameHit){
 
