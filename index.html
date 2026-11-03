@@ -308,6 +308,7 @@ let targetWord = '';
 let gameRunning = false;
 let hintRevealed = false;
 let revealTimeout = null;
+let hintHideTimeout = null;
 // 🔲 FRAME POSITION (GLOBAL)
 let frameX = 0;
 let frameY = 0;
@@ -597,10 +598,33 @@ function newTargetWord() {
 // Hint in Runde 4 deaktivieren
 hintDisabled = (getIllusionRound() === 4);
   
-  if(!hintRevealed){
-    document.getElementById('wordHint').textContent =
-      getMaskedWord(targetWord, getIllusionRound());
-  }
+const hintEl = document.getElementById('wordHint');
+
+// Alten Timer stoppen
+if(hintHideTimeout){
+  clearTimeout(hintHideTimeout);
+}
+
+// Hint wieder sichtbar machen
+hintEl.style.visibility = 'visible';
+
+if(!hintRevealed){
+  hintEl.textContent =
+    getMaskedWord(targetWord, getIllusionRound());
+}
+
+// ILLUSION 3: THE VANISHING HINT
+if(getIllusionRound() === 3){
+
+  hintHideTimeout = setTimeout(() => {
+
+    if(gameRunning && getIllusionRound() === 3){
+      hintEl.style.visibility = 'hidden';
+    }
+
+  }, 20000);
+
+}
 
   randomizeFrame();
   generateFakeFrames();
@@ -830,7 +854,7 @@ function triggerOriginalFramePulse() {
 
   const illusion = getIllusionRound();
 
-  if(illusion !== 3 && illusion !== 5) return;
+  if(illusion !== 5) return;
 
   setTimeout(() => {
     pulseActive = true;
