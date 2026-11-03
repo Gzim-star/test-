@@ -347,6 +347,7 @@ let fakePulseTime = 0;
 let colorShiftTimeout = null;
 let colorShiftFakeTriggered = false;
 let colorShiftIllusionTriggered = false;
+let colorLieSwapped = false;
 let pulseTime = 0;
 let pulseDuration = 300; // Millisekunden
 let framesInvisible = false;
@@ -552,7 +553,31 @@ function activateColorLie() {
     ];
   });
 }
-  
+function swapColorLieOnce() {
+  if (getIllusionRound() !== 2) return;
+  if (colorLieSwapped) return;
+
+  const allFrames = [
+    ...fakeFrames,
+    { isOriginal: true, color: frameColor }
+  ];
+
+  if (allFrames.length < 2) return;
+
+  const oldColors = allFrames.map(f => f.color);
+
+  allFrames.forEach((f, i) => {
+    const newColor = oldColors[(i + 1) % oldColors.length];
+
+    if (f.isOriginal) {
+      frameColor = newColor;
+    } else {
+      f.color = newColor;
+    }
+  });
+
+  colorLieSwapped = true;
+}  
 let shuffledFrameColors = [];
 let colorIndex = 0;
 
@@ -584,10 +609,23 @@ hintDisabled = (getIllusionRound() === 4);
   if(colorShiftTimeout){
     clearTimeout(colorShiftTimeout);
   }
-
   // Flag zurücksetzen
   colorShiftIllusionTriggered = false;
+   if(getIllusionRound() === 2){
 
+    colorLieSwapped = false;
+
+    colorShiftTimeout = setTimeout(() => {
+
+      if(gameRunning && getIllusionRound() === 2){
+
+        swapColorLieOnce();
+
+      }
+
+    }, 6000);
+
+  } else {
   // Neuen Timer speichern
   colorShiftTimeout = setTimeout(() => {
     triggerColorShiftIllusion();
