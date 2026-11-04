@@ -197,6 +197,32 @@ body.wrong-answer-flash::after {
   }
 }
 
+/* ===== CORRECT WORD EFFECT ===== */
+body.correct-answer-flash::after {
+  content: "CORRECT";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  color: rgba(0, 255, 100, 0.50);
+  -webkit-text-stroke: 1px rgba(0, 200, 80, 0.65);
+  font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+  font-size: clamp(55px, 15vw, 110px);
+  font-weight: 900;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10000;
+
+  transform: translate(-50%, -50%) rotate(-35deg);
+  animation: correctWordAppear 900ms ease-out forwards;
+}
+
+@keyframes correctWordAppear {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 </style>
 </head>
 
@@ -906,6 +932,15 @@ function flashWrongAnswer() {
 
   body.classList.add('wrong-answer-flash');
 }
+function flashCorrectAnswer() {
+  const body = document.body;
+
+  body.classList.remove('correct-answer-flash');
+
+  void body.offsetWidth;
+
+  body.classList.add('correct-answer-flash');
+}
 function collide(arena, player) {
   const { x, y } = player.pos;
   return y >= arena.length || x < 0 || x >= arena[0].length || arena[y][x] !== null;
@@ -1012,7 +1047,9 @@ else if(getIllusionRound() === 8){
   return;
 }
   if(targetFound){
-
+  
+  flashCorrectAnswer();
+  
   framesInvisible = false; // 🔧 Reset damit neue Runde wieder sichtbar ist
       
   playNextRoundTone(); // 👈 HIER
