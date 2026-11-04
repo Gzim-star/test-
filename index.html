@@ -971,11 +971,13 @@ function checkAndClearWords() {
   const found = findWords();
   if(!found.length) return;
   let targetFound = false;
+  let targetWordFound = false;
   let fakeFrameHit = false;
   
   found.forEach(group=>{
     const letters = group.map(([y,x])=>arena[y][x]).join('');
-if(letters.toUpperCase() === targetWord){
+    if(letters.toUpperCase() === targetWord){
+    targetWordFound = true;
 
   const inOriginalFrame = group.every(([y,x])=> 
     x===frameX && y>=frameY && y<frameY+frameH
@@ -1017,9 +1019,9 @@ else if(getIllusionRound() === 8){
     group.forEach(([y,x])=>highlights[y][x]=color);
   });
 
-  if(!targetFound){
-    flashWrongAnswer();
-  }
+if(targetWordFound && !targetFound){
+  flashWrongAnswer();
+}
   
   setTimeout(()=>{
   if(fakeFrameHit){
