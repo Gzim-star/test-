@@ -170,7 +170,7 @@ body.wrong-answer-flash::after {
   top: 50%;
   left: 50%;
   color: rgba(230, 0, 50, 0.50);
-  -webkit-text-stroke: 1px #e60055;
+  -webkit-text-stroke: 2px #e60055;
   font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
   font-size: clamp(55px, 15vw, 110px);
   font-weight: 900;
@@ -179,7 +179,7 @@ body.wrong-answer-flash::after {
   z-index: 10000;
 
   transform: translate(-50%, -50%) rotate(-35deg);
-  animation: wrongWordAppear 800ms ease-out forwards;
+  animation: wrongWordAppear 900ms ease-out forwards;
 }
 
 @keyframes wrongWordAppear {
@@ -195,32 +195,6 @@ body.wrong-answer-flash::after {
   100% {
     opacity: 0;
   }
-}
-
-/* ===== CORRECT WORD EFFECT ===== */
-body.correct-answer-flash::after {
-  content: "CORRECT";
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  color: rgba(0, 255, 50, 0.50);
-  -webkit-text-stroke: 1px rgba(0, 200, 80, 0.65);
-  font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
-  font-size: clamp(55px, 15vw, 110px);
-  font-weight: 900;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 10000;
-
-  transform: translate(-50%, -50%) rotate(-35deg);
-  animation: correctWordAppear 900ms ease-out forwards;
-}
-
-@keyframes correctWordAppear {
-  0% { opacity: 0; }
-  20% { opacity: 1; }
-  70% { opacity: 1; }
-  100% { opacity: 0; }
 }
 
 </style>
@@ -932,15 +906,6 @@ function flashWrongAnswer() {
 
   body.classList.add('wrong-answer-flash');
 }
-function flashCorrectAnswer() {
-  const body = document.body;
-
-  body.classList.remove('correct-answer-flash');
-
-  void body.offsetWidth;
-
-  body.classList.add('correct-answer-flash');
-}
 function collide(arena, player) {
   const { x, y } = player.pos;
   return y >= arena.length || x < 0 || x >= arena[0].length || arena[y][x] !== null;
@@ -971,13 +936,11 @@ function checkAndClearWords() {
   const found = findWords();
   if(!found.length) return;
   let targetFound = false;
-  let targetWordFound = false;
   let fakeFrameHit = false;
   
   found.forEach(group=>{
     const letters = group.map(([y,x])=>arena[y][x]).join('');
-    if(letters.toUpperCase() === targetWord){
-    targetWordFound = true;
+if(letters.toUpperCase() === targetWord){
 
   const inOriginalFrame = group.every(([y,x])=> 
     x===frameX && y>=frameY && y<frameY+frameH
@@ -1019,9 +982,9 @@ else if(getIllusionRound() === 8){
     group.forEach(([y,x])=>highlights[y][x]=color);
   });
 
-if(targetWordFound && !targetFound){
-  flashWrongAnswer();
-}
+  if(!targetFound){
+    flashWrongAnswer();
+  }
   
   setTimeout(()=>{
   if(fakeFrameHit){
@@ -1049,11 +1012,7 @@ if(targetWordFound && !targetFound){
   return;
 }
   if(targetFound){
-  
-  flashCorrectAnswer();
-  // CORRECT zuerst vollständig anzeigen
-  setTimeout(() => {
-  
+
   framesInvisible = false; // 🔧 Reset damit neue Runde wieder sichtbar ist
       
   playNextRoundTone(); // 👈 HIER
@@ -1153,9 +1112,6 @@ const overlapsFake = fakeFrames.some(f =>
 fakePulseTriggered = false;
  triggerFakeFramePulse();
   triggerOriginalFramePulse();
-  
-  }, 1000);
-  
   return;
 }
     found.flat().forEach(([y,x])=>arena[y][x]=null);
