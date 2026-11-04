@@ -1049,6 +1049,8 @@ else if(getIllusionRound() === 8){
   if(targetFound){
   
   flashCorrectAnswer();
+  // CORRECT zuerst vollständig anzeigen
+  setTimeout(() => {
   
   framesInvisible = false; // 🔧 Reset damit neue Runde wieder sichtbar ist
       
@@ -1149,6 +1151,9 @@ const overlapsFake = fakeFrames.some(f =>
 fakePulseTriggered = false;
  triggerFakeFramePulse();
   triggerOriginalFramePulse();
+  
+  }, 1100);
+  
   return;
 }
     found.flat().forEach(([y,x])=>arena[y][x]=null);
