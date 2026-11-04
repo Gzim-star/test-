@@ -373,6 +373,21 @@ let hintHideTimeout = null;
 let frameX = 0;
 let frameY = 0;
 let frameH = 10; // Höhe fix
+// ===== FRAME ANSWER FLASH =====
+let originalFrameFlashColor = null;
+let originalFrameFlashUntil = 0;
+
+function flashFrame(frame, color) {
+  if (!frame) return;
+
+  if (frame === 'original') {
+    originalFrameFlashColor = color;
+    originalFrameFlashUntil = Date.now() + 900;
+  } else {
+    frame.flashColor = color;
+    frame.flashUntil = Date.now() + 900;
+  }
+}
 // 🟫 FAKE FRAMES SYSTEM
 let round = 1;
 const maxRounds = 10;
@@ -975,6 +990,7 @@ function checkAndClearWords() {
   let targetFound = false;
   let fakeFrameHit = false;
   let targetWordFound = false;
+  let answerFrame = null;
   
   found.forEach(group=>{
     const letters = group.map(([y,x])=>arena[y][x]).join('');
@@ -984,11 +1000,19 @@ if(letters.toUpperCase() === targetWord){
     x===frameX && y>=frameY && y<frameY+frameH
   );
 
-  const inFakeFrame = fakeFrames.some(f =>
-    group.every(([y,x]) =>
-      x===f.x && y>=f.y && y<f.y+frameH
-    )
-  );
+const matchedFakeFrame = fakeFrames.find(f =>
+  group.every(([y,x]) =>
+    x===f.x && y>=f.y && y<f.y+frameH
+  )
+);
+
+const inFakeFrame = !!matchedFakeFrame;
+
+if(inOriginalFrame){
+  answerFrame = 'original';
+} else if(matchedFakeFrame){
+  answerFrame = matchedFakeFrame;
+}
 
   if(getIllusionRound() === 10){
 
@@ -1021,10 +1045,19 @@ else if(getIllusionRound() === 8){
   });
 
 if(targetFound){
-  flashCorrectAnswer();
+
+  if(getIllusionRound() === 8){
+    flashFrame(answerFrame, '#00c850');
+  }
+  else if(getIllusionRound() !== 10){
+    flashFrame('original', '#00c850');
+  }
+
 }
 else if(targetWordFound){
-  flashWrongAnswer();
+
+  flashFrame(answerFrame, '#e60055');
+
 }
   
   setTimeout(()=>{
@@ -1496,7 +1529,10 @@ if(!framesInvisible){
 
   // Rahmen
   ctx.globalAlpha = alpha;
-  ctx.strokeStyle = currentColor;
+  ctx.strokeStyle =
+  Date.now() < originalFrameFlashUntil
+  ? originalFrameFlashColor
+  : currentColor;
   ctx.lineWidth = borderWidth;
   ctx.strokeRect(frameX+0.05, frameY-0.27, 0.9, frameH-0.2);
   ctx.globalAlpha = 1;
@@ -1525,7 +1561,10 @@ if(!framesInvisible){
 
     ctx.fillStyle='#000000';
     ctx.globalAlpha = alpha;
-    ctx.strokeStyle = f.color || '#ffffff';
+    ctx.strokeStyle =
+    Date.now() < (f.flashUntil || 0)
+    ? f.flashColor
+    : (f.color || '#ffffff');
     ctx.lineWidth = borderWidth;
     ctx.fillRect(f.x+0.05, f.y-0.27, 0.9, frameH-0.2);
     ctx.strokeRect(f.x+0.05, f.y-0.27, 0.9, frameH-0.2);
