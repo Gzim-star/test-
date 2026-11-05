@@ -416,6 +416,22 @@ let colorLieSwapped = false;
 let pulseTime = 0;
 let pulseDuration = 300; // Millisekunden
 let framesInvisible = false;
+// ===== ILLUSION 6: ONE FAKE FRAME RETURNS =====
+let illusion6FakeVisible = false;
+let illusion6FakeIndex = -1;
+let illusion6HideTimer = null;
+let illusion6FakeTimer = null;
+
+function resetIllusion6Fake() {
+  clearTimeout(illusion6HideTimer);
+  clearTimeout(illusion6FakeTimer);
+
+  illusion6HideTimer = null;
+  illusion6FakeTimer = null;
+
+  illusion6FakeVisible = false;
+  illusion6FakeIndex = -1;
+}
 let hintDisabled = false; // Hint in Runde 4 deaktivieren
 let mindMessageShown = false;
 let round4InvisibleY = null;
@@ -1071,7 +1087,8 @@ else if(targetWordFound){
   setTimeout(() => {
   
   framesInvisible = false; // 🔧 Reset damit neue Runde wieder sichtbar ist
-      
+  resetIllusion6Fake();  
+  
   playNextRoundTone(); // 👈 HIER
   // Spielfeld leeren
   arena.forEach(r=>r.fill(null));
@@ -1096,13 +1113,8 @@ if (getIllusionRound() === 5) {
   startRound5Void();
 }
 
-
 // Runde 6 Spezialeffekt
-if(getIllusionRound() === 6){
-  setTimeout(()=>{
-    framesInvisible = true;
-   },6000);
- }
+
     colorShiftFakeTriggered = false;
     colorShiftIllusionTriggered = false;
   // Original-Farbe für den aktuellen Frame aktualisieren
@@ -1116,6 +1128,43 @@ if(getIllusionRound() > 1){
 }
   // Neues Wort erzeugt auch neuen Original Frame
   newTargetWord();
+// ===== ILLUSION 6 – ONE FAKE FRAME RETURNS =====
+if (getIllusionRound() === 6) {
+
+  const illusion6RoundNumber = round;
+
+  // Nach 6 Sekunden verschwinden alle Rahmen
+  illusion6HideTimer = setTimeout(() => {
+
+    if (
+      gameRunning &&
+      round === illusion6RoundNumber &&
+      getIllusionRound() === 6
+    ) {
+      framesInvisible = true;
+    }
+
+  }, 6000);
+
+  // Nach insgesamt 30 Sekunden erscheint ein Fake-Rahmen
+  illusion6FakeTimer = setTimeout(() => {
+
+    if (
+      gameRunning &&
+      round === illusion6RoundNumber &&
+      getIllusionRound() === 6 &&
+      framesInvisible &&
+      fakeFrames.length > 0
+    ) {
+
+      illusion6FakeIndex =
+        Math.floor(Math.random() * fakeFrames.length);
+
+      illusion6FakeVisible = true;
+    }
+
+  }, 30000);
+}
 // Fake Frames neu erzeugen
 fakePulseTriggered = false;
 fakePulseActive = false;
@@ -1518,10 +1567,17 @@ if(!framesInvisible){
 
 }
 
-
 // 🟫 FAKE FRAMES
-if(!framesInvisible){
-  fakeFrames.forEach(f=>{
+fakeFrames.forEach((f, index)=>{
+
+  if(
+    framesInvisible &&
+    !(
+      getIllusionRound() === 6 &&
+      illusion6FakeVisible &&
+      index === illusion6FakeIndex
+    )
+  ) return;
     let borderWidth = 0.05;
     let alpha = 1;
 
@@ -1545,7 +1601,6 @@ if(!framesInvisible){
     ctx.strokeRect(f.x+0.05, f.y-0.27, 0.9, frameH-0.2);
     ctx.globalAlpha = 1;
   });
-}
 
 arena.forEach((row,y)=>{
   row.forEach((v,x)=>{
@@ -1623,6 +1678,7 @@ function restartGame() {
   frameColor = originalFrameColors[0];
   mindMessageShown = false;
   framesInvisible = false;
+  resetIllusion6Fake();
   hintDisabled = false;
   hintRevealed = false;
   pulseActive = false;
