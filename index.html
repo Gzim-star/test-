@@ -162,6 +162,10 @@ canvas {
   opacity: 0 !important;
   pointer-events: none !important;
 }
+/* HINT bleibt nach THE VOID unsichtbar */
+.game.void-hint-hidden .hint {
+  visibility: hidden !important;
+}
 /* ===== ONE RED FLASH ===== */
 /* ===== WRONG WORD EFFECT ===== */
 body.wrong-answer-flash::after {
@@ -478,6 +482,9 @@ function startRound5Void() {
         'void-reset-visible',
         'void-reset-blink-hidden'
       );
+      
+      gameElement.classList.add('void-hint-hidden');
+    
     }, 60000);
 
   }, 10000);
@@ -659,8 +666,9 @@ function newTargetWord() {
 hintDisabled = (getIllusionRound() === 4);
   
 const hintEl = document.getElementById('wordHint');
+gameElement.classList.remove('void-hint-hidden');
 
-// Alten Timer stoppen
+  // Alten Timer stoppen
 if(hintHideTimeout){
   clearTimeout(hintHideTimeout);
 }
