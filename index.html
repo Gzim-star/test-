@@ -429,7 +429,7 @@ let voidBlinkTimer = null;
 let voidBlinkRestoreTimer = null;
 let voidEndTimer = null;
 let voidTriggeredForRound5 = false;
-
+let voidHintLocked = false;
 function clearVoidTimers() {
   [
     voidStartTimer,
@@ -483,6 +483,7 @@ function startRound5Void() {
         'void-reset-blink-hidden'
       );
       
+      voidHintLocked = true; 
       gameElement.classList.add('void-hint-hidden');
     
     }, 60000);
@@ -499,7 +500,8 @@ function resetRound5Void() {
     'void-reset-blink-hidden',
     'void-hint-hidden'
   );
-
+  
+  voidHintLocked = false;
   voidTriggeredForRound5 = false;
 }
 
@@ -667,7 +669,10 @@ function newTargetWord() {
 hintDisabled = (getIllusionRound() === 4);
   
 const hintEl = document.getElementById('wordHint');
-gameElement.classList.remove('void-hint-hidden');
+
+if (!voidHintLocked) {
+  gameElement.classList.remove('void-hint-hidden');
+}
 
   // Alten Timer stoppen
 if(hintHideTimeout){
