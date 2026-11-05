@@ -257,7 +257,7 @@ body.correct-answer-flash::after {
     <button onclick="move(-1)">◀</button>
     <button onclick="dropFast()">▼</button>
     <button onclick="move(1)">▶</button>
-    <button id="resetButton" onclick="restartGame()">RESET</button>
+    <button onclick="restartGame()">RESET</button>
   </div>
 </div>
 
@@ -369,8 +369,6 @@ let gameRunning = false;
 let hintRevealed = false;
 let revealTimeout = null;
 let hintHideTimeout = null;
-let illusion6HintClicks = 0;
-let illusion6Timeout = null;
 // 🔲 FRAME POSITION (GLOBAL)
 let frameX = 0;
 let frameY = 0;
@@ -661,12 +659,7 @@ function newTargetWord() {
 hintDisabled = (getIllusionRound() === 4);
   
 const hintEl = document.getElementById('wordHint');
-illusion6HintClicks = 0;
 
-const resetButton = document.getElementById('resetButton');
-if(resetButton){
-  resetButton.disabled = (getIllusionRound() === 6);
-}
 // Alten Timer stoppen
 if(hintHideTimeout){
   clearTimeout(hintHideTimeout);
@@ -760,47 +753,31 @@ function revealHint(){
   if(hintDisabled) return;
   if(hintRevealed) return;
 
-  // Geheimfunktion nur in Illusion 6
-  if(getIllusionRound() === 6){
-    illusion6HintClicks++;
-
-    if(illusion6HintClicks >= 3){
-      illusion6HintClicks = 0;
-      hintRevealed = false;
-
-      if(revealTimeout){
-        clearTimeout(revealTimeout);
-      }
-
-      advanceToNextRound();
-      return;
-    }
-  }
-
   hintRevealed = true;
   const hintEl = document.getElementById('wordHint');
 
   if(getIllusionRound() === 9){
+    // 🎭 Fake Hint zuerst
     const fakeWord = getFakeWord(targetWord);
     hintEl.textContent = fakeWord;
 
     setTimeout(() => {
+      // Original-Wort zeigen
       hintEl.textContent = targetWord;
 
       setTimeout(() => {
-        hintEl.textContent =
-          getMaskedWord(targetWord, getIllusionRound());
+        // Wieder maskieren
+        hintEl.textContent = getMaskedWord(targetWord, getIllusionRound());
         hintRevealed = false;
       }, 2000);
 
     }, 2000);
 
   } else {
+    // Normale Runde
     hintEl.textContent = targetWord;
-
     revealTimeout = setTimeout(() => {
-      hintEl.textContent =
-        getMaskedWord(targetWord, round);
+      hintEl.textContent = getMaskedWord(targetWord, round);
       hintRevealed = false;
     }, 2000);
   }
@@ -1078,15 +1055,7 @@ else if(targetWordFound){
   if(targetFound){
   // CORRECT zuerst vollständig anzeigen
   setTimeout(() => {
-      advanceToNextRound();
-    }, 600);
-    
-    return;
-}
-  if(illusion6Timeout){
-  clearTimeout(illusion6Timeout);
-  illusion6Timeout = null;
-}
+  
   framesInvisible = false; // 🔧 Reset damit neue Runde wieder sichtbar ist
       
   playNextRoundTone(); // 👈 HIER
@@ -1108,11 +1077,6 @@ if(round > maxRounds){
  
   updateRoundDisplay();
 
-if(getIllusionRound() === 6){
-  illusion6Timeout = setTimeout(() => {
-    framesInvisible = true;
-  }, 6000);
-}
 // Runde 5: THE VOID nach ca. 10 Sekunden planen
 if (getIllusionRound() === 5) {
   startRound5Void();
