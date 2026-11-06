@@ -373,9 +373,6 @@ let gameRunning = false;
 let hintRevealed = false;
 let revealTimeout = null;
 let hintHideTimeout = null;
-// ===== ILLUSION 3: THE ECHO HINT CYCLE =====
-let illusion3HintTimer = null;
-let illusion3HintActive = false;
 // 🔲 FRAME POSITION (GLOBAL)
 let frameX = 0;
 let frameY = 0;
@@ -818,24 +815,30 @@ const hintEl = document.getElementById('wordHint');
 if (!voidHintLocked) {
   gameElement.classList.remove('void-hint-hidden');
 }
-// Alte Hint-Timer stoppen
-clearTimeout(hintHideTimeout);
-stopIllusion3HintCycle();
 
-// Neuen Hint sichtbar machen
+  // Alten Timer stoppen
+if(hintHideTimeout){
+  clearTimeout(hintHideTimeout);
+}
+
+// Hint wieder sichtbar machen
 hintEl.style.visibility = 'visible';
-hintRevealed = false;
 
-if (getIllusionRound() === 3) {
-
-  // THE ECHO – drei Hinweise im Wechsel
-  startIllusion3HintCycle();
-
-} else {
-
-  // Alle anderen Illusionen bleiben unverändert
+if(!hintRevealed){
   hintEl.textContent =
     getMaskedWord(targetWord, getIllusionRound());
+}
+
+// ILLUSION 3: THE VANISHING HINT
+if(getIllusionRound() === 3){
+
+  hintHideTimeout = setTimeout(() => {
+
+    if(gameRunning && getIllusionRound() === 3){
+      hintEl.style.visibility = 'hidden';
+    }
+
+  }, 20000);
 
 }
 
@@ -901,66 +904,11 @@ function getFakeWord(originalWord) {
   const index = Math.floor(Math.random() * candidates.length);
   return candidates[index].toUpperCase();
 }
-// ===== ILLUSION 3: THREE HINTS =====
 
-function stopIllusion3HintCycle() {
-  clearTimeout(illusion3HintTimer);
-  illusion3HintTimer = null;
-  illusion3HintActive = false;
-}
-
-function startIllusion3HintCycle() {
-
-  stopIllusion3HintCycle();
-
-  if (getIllusionRound() !== 3) return;
-
-  const candidates = WORDS.filter(word =>
-    word.length === targetWord.length &&
-    word !== targetWord
-  );
-
-  // Zwei unterschiedliche Fake-Wörter auswählen
-  candidates.sort(() => Math.random() - 0.5);
-
-  if (candidates.length < 2) return;
-
-  const hints = [
-    targetWord,
-    candidates[0],
-    candidates[1]
-  ];
-
-  const hintEl = document.getElementById('wordHint');
-
-  let index = 0;
-
-  illusion3HintActive = true;
-  hintEl.textContent = hints[0];
-
-  function showNextHint() {
-
-    if (
-      !illusion3HintActive ||
-      !gameRunning ||
-      getIllusionRound() !== 3
-    ) return;
-
-    index = (index + 1) % 3;
-
-    hintEl.textContent = hints[index];
-
-    illusion3HintTimer = setTimeout(showNextHint, 6000);
-  }
-
-  illusion3HintTimer = setTimeout(showNextHint, 6000);
-}
 function revealHint(){
   if(hintDisabled) return;
   if(hintRevealed) return;
-  
-  if (getIllusionRound() === 3) return;
-  
+
   hintRevealed = true;
   const hintEl = document.getElementById('wordHint');
 
@@ -1233,7 +1181,6 @@ else if(getIllusionRound() === 8){
   });
 
 if(targetFound){
-  stopIllusion3HintCycle();
   flashCorrectAnswer();
 }
 else if(targetWordFound){
