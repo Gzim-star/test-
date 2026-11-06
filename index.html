@@ -939,13 +939,12 @@ function startIllusion3HintCycle() {
 
   function showNextHint() {
 
-    if (
-      !illusion3HintActive ||
-      !gameRunning ||
-      round !== expectedRound ||
-      targetWord !== expectedTarget ||
-      getIllusionRound() !== 3
-    ) {
+if (
+  !illusion3HintActive ||
+  round !== expectedRound ||
+  targetWord !== expectedTarget ||
+  getIllusionRound() !== 3
+) {
       stopIllusion3HintCycle();
       return;
     }
@@ -1238,6 +1237,7 @@ else if(getIllusionRound() === 8){
   });
 
 if(targetFound){
+  stopIllusion3HintCycle();
   flashCorrectAnswer();
 }
 else if(targetWordFound){
