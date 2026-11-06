@@ -425,6 +425,57 @@ let illusion6FakeTimer = null;
 let illusion6BlinkTimer = null;
 let illusion6BlinkIndex = -1;
 let illusion6BlinkVisible = false;
+// ===== ILLUSION 3: THE ECHO =====
+let illusion3EchoTimers = [];
+let illusion3EchoBlinkIndex = -1;
+let illusion3EchoBlinkStart = 0;
+
+function resetIllusion3Echo() {
+  illusion3EchoTimers.forEach(timer => clearTimeout(timer));
+  illusion3EchoTimers = [];
+  illusion3EchoBlinkIndex = -1;
+  illusion3EchoBlinkStart = 0;
+}
+
+function startIllusion3Echo() {
+
+  if (getIllusionRound() !== 3 || !gameRunning) return;
+
+  resetIllusion3Echo();
+
+  if (fakeFrames.length < 2) return;
+
+  const expectedRound = round;
+
+  const indexes = fakeFrames.map((f, i) => i);
+
+  indexes.sort(() => Math.random() - 0.5);
+
+  function blinkFake(index) {
+    if (
+      !gameRunning ||
+      round !== expectedRound ||
+      getIllusionRound() !== 3
+    ) return;
+
+    illusion3EchoBlinkIndex = index;
+    illusion3EchoBlinkStart = Date.now();
+
+    setTimeout(() => {
+      if (illusion3EchoBlinkIndex === index) {
+        illusion3EchoBlinkIndex = -1;
+      }
+    }, 600);
+  }
+
+  illusion3EchoTimers.push(setTimeout(() => {
+    blinkFake(indexes[0]);
+  }, 2000));
+
+  illusion3EchoTimers.push(setTimeout(() => {
+    blinkFake(indexes[1]);
+  }, 4000));
+}
 
 function resetIllusion6Fake() {
   clearTimeout(illusion6HideTimer);
@@ -896,7 +947,9 @@ function randomizeFrame() {
 
 function generateFakeFrames() {
   fakeFrames = [];
-  let fakeCount = round - 1;
+  let fakeCount = getIllusionRound() === 3
+  ? Math.max(2, round - 1)
+  : round - 1;
   let availableColors = [...COLORS];
 
   for(let i=0;i<fakeCount;i++){
@@ -1163,8 +1216,9 @@ else if(targetWordFound){
   // CORRECT zuerst vollständig anzeigen
   setTimeout(() => {
   
-  framesInvisible = false; // 🔧 Reset damit neue Runde wieder sichtbar ist
-  resetIllusion6Fake();  
+  framesInvisible = false;  // 🔧 Reset damit neue Runde wieder sichtbar ist
+  resetIllusion6Fake();
+  resetIllusion3Echo();  
   
   playNextRoundTone(); // 👈 HIER
   // Spielfeld leeren
@@ -1205,7 +1259,9 @@ if(getIllusionRound() > 1){
 }
   // Neues Wort erzeugt auch neuen Original Frame
   newTargetWord();
-// ===== ILLUSION 6 – ONE FAKE FRAME RETURNS =====
+ // ILLUSION 3 – THE ECHO
+  startIllusion3Echo();
+  // ===== ILLUSION 6 – ONE FAKE FRAME RETURNS =====
 if (getIllusionRound() === 6) {
 
   const illusion6RoundNumber = round;
@@ -1672,6 +1728,21 @@ if(
       }
     }
 
+    // ILLUSION 3 – THE ECHO BLINK
+if (
+  getIllusionRound() === 3 &&
+  index === illusion3EchoBlinkIndex
+) {
+  const progress = Math.min(
+    (Date.now() - illusion3EchoBlinkStart) / 600,
+    1
+  );
+
+  const glow = Math.sin(progress * Math.PI);
+
+  borderWidth = 0.05 + glow * 0.10;
+  alpha = 1 + glow * 0.8;
+}
     ctx.fillStyle='#000000';
     ctx.globalAlpha = alpha;
     ctx.strokeStyle = f.color || '#ffffff';
