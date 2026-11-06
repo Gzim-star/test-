@@ -421,6 +421,10 @@ let illusion6FakeVisible = false;
 let illusion6FakeIndex = -1;
 let illusion6HideTimer = null;
 let illusion6FakeTimer = null;
+// ===== ILLUSION 6: SECOND TRAP =====
+let illusion6BlinkTimer = null;
+let illusion6BlinkIndex = -1;
+let illusion6BlinkVisible = false;
 
 function resetIllusion6Fake() {
   clearTimeout(illusion6HideTimer);
@@ -431,6 +435,77 @@ function resetIllusion6Fake() {
 
   illusion6FakeVisible = false;
   illusion6FakeIndex = -1;
+
+  clearTimeout(illusion6BlinkTimer);
+  illusion6BlinkTimer = null;
+
+  illusion6BlinkIndex = -1;
+  illusion6BlinkVisible = false;
+
+}
+
+function startIllusion6SecondTrap() {
+
+  if (getIllusionRound() !== 6) return;
+  if (!gameRunning || !illusion6FakeVisible) return;
+  if (fakeFrames.length < 2) return;
+
+  clearTimeout(illusion6BlinkTimer);
+
+  const expectedRound = round;
+
+  const candidates = fakeFrames
+    .map((f, index) => index)
+    .filter(index => index !== illusion6FakeIndex);
+
+  if (candidates.length === 0) return;
+
+  illusion6BlinkIndex =
+    candidates[Math.floor(Math.random() * candidates.length)];
+
+  illusion6BlinkVisible = false;
+
+  // 6 Sekunden nach WRONG starten
+  illusion6BlinkTimer = setTimeout(() => {
+
+    if (
+      !gameRunning ||
+      round !== expectedRound ||
+      getIllusionRound() !== 6
+    ) return;
+
+    let flashes = 0;
+
+    function blink() {
+
+      if (
+        !gameRunning ||
+        round !== expectedRound ||
+        getIllusionRound() !== 6
+      ) {
+        illusion6BlinkVisible = false;
+        return;
+      }
+
+      // Rahmen einschalten
+      illusion6BlinkVisible = true;
+
+      illusion6BlinkTimer = setTimeout(() => {
+
+        // Rahmen ausschalten
+        illusion6BlinkVisible = false;
+        flashes++;
+
+        if (flashes < 3) {
+          illusion6BlinkTimer = setTimeout(blink, 300);
+        }
+
+      }, 350);
+    }
+
+    blink();
+
+  }, 6000);
 }
 let hintDisabled = false; // Hint in Runde 4 deaktivieren
 let mindMessageShown = false;
@@ -962,6 +1037,8 @@ function flashWrongAnswer() {
   void body.offsetWidth;
 
   body.classList.add('wrong-answer-flash');
+  // ILLUSION 6 – SECOND TRAP
+  startIllusion6SecondTrap();
 }
 function flashCorrectAnswer() {
   const body = document.body;
@@ -1570,14 +1647,16 @@ if(!framesInvisible){
 // 🟫 FAKE FRAMES
 fakeFrames.forEach((f, index)=>{
 
-  if(
-    framesInvisible &&
-    !(
-      getIllusionRound() === 6 &&
-      illusion6FakeVisible &&
-      index === illusion6FakeIndex
+if(
+  framesInvisible &&
+  !(
+    getIllusionRound() === 6 &&
+    (
+      (illusion6FakeVisible && index === illusion6FakeIndex) ||
+      (illusion6BlinkVisible && index === illusion6BlinkIndex)
     )
-  ) return;
+  )
+) return;
     let borderWidth = 0.05;
     let alpha = 1;
 
