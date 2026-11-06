@@ -432,7 +432,8 @@ let illusion6BlinkVisible = false;
 let illusion3EchoTimers = [];
 let illusion3EchoBlinkIndex = -1;
 let illusion3EchoBlinkStart = 0;
-
+let illusion6EchoBlinkStart = 0;
+  
 function resetIllusion3Echo() {
   illusion3EchoTimers.forEach(timer => clearTimeout(timer));
   illusion3EchoTimers = [];
@@ -498,6 +499,7 @@ function resetIllusion6Fake() {
 
 }
 
+
 function startIllusion6SecondTrap() {
 
   if (getIllusionRound() !== 6) return;
@@ -538,15 +540,16 @@ function startIllusion6SecondTrap() {
         getIllusionRound() !== 6
       ) {
         illusion6BlinkVisible = false;
+        illusion6EchoBlinkStart = 0;
         return;
       }
 
-      // Rahmen einschalten
+      // Weichen Puls starten – exakt wie THE ECHO
       illusion6BlinkVisible = true;
+      illusion6EchoBlinkStart = Date.now();
 
       illusion6BlinkTimer = setTimeout(() => {
 
-        // Rahmen ausschalten
         illusion6BlinkVisible = false;
         flashes++;
 
@@ -554,13 +557,15 @@ function startIllusion6SecondTrap() {
           illusion6BlinkTimer = setTimeout(blink, 300);
         }
 
-      }, 350);
+      }, pulseDuration);
+
     }
 
     blink();
 
   }, 6000);
 }
+
 let hintDisabled = false; // Hint in Runde 4 deaktivieren
 let mindMessageShown = false;
 let round4InvisibleY = null;
@@ -1785,10 +1790,37 @@ if(
       }
     }
   // ILLUSION 3 – THE ECHO BLINK
+// ILLUSION 6 – SECOND TRAP BLINK
+let echoBlinkStart = 0;
+
 if (
   getIllusionRound() === 3 &&
   index === illusion3EchoBlinkIndex
 ) {
+  echoBlinkStart = illusion3EchoBlinkStart;
+}
+
+if (
+  getIllusionRound() === 6 &&
+  illusion6BlinkVisible &&
+  index === illusion6BlinkIndex
+) {
+  echoBlinkStart = illusion6EchoBlinkStart;
+}
+
+if (echoBlinkStart > 0) {
+
+  const progress = Math.min(
+    (Date.now() - echoBlinkStart) / pulseDuration,
+    1
+  );
+
+  const pulse = Math.sin(progress * Math.PI);
+
+  borderWidth = 0.05 + pulse * 0.08;
+  alpha = 1 + pulse * 0.5;
+}
+
   const progress = Math.min(
     (Date.now() - illusion3EchoBlinkStart) / pulseDuration,
     1
