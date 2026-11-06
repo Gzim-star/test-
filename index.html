@@ -1784,26 +1784,27 @@ if(
         alpha = 1 + Math.sin(progress * Math.PI) * 0.5;
       }
     }
- // ILLUSION 3 – THE ECHO BLINK
-let echoBlink = false;
-let echoGlow = 0;
-
+  // ILLUSION 3 – THE ECHO BLINK
 if (
   getIllusionRound() === 3 &&
   index === illusion3EchoBlinkIndex
 ) {
-  echoBlink = true;
-
   const progress = Math.min(
-    (Date.now() - illusion3EchoBlinkStart) / 600,
+    (Date.now() - illusion3EchoBlinkStart) / pulseDuration,
     1
   );
 
-  echoGlow = Math.sin(progress * Math.PI);
+  if (progress >= 1) {
+    illusion3EchoBlinkIndex = -1;
+  } else {
+    const pulse = Math.sin(progress * Math.PI);
 
-  borderWidth = 0.05 + echoGlow * 0.25;
-  alpha = 0.25 + echoGlow * 0.75;
+    // EXAKT wie beim Originalrahmen
+    borderWidth = 0.05 + pulse * 0.08;
+    alpha = 1 + pulse * 0.5;
+  }
 }
+
 ctx.fillStyle = '#000000';
 ctx.globalAlpha = alpha;
 ctx.strokeStyle = f.color || '#ffffff';
