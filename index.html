@@ -395,7 +395,17 @@ function shuffleIllusions() {
     [illusionOrder[i], illusionOrder[j]] =
     [illusionOrder[j], illusionOrder[i]];
   }
+// ILLUSION 3 darf nicht in Runde 2 erscheinen
 
+  if (illusionOrder[0] === 3) {
+
+    const j = 1 + Math.floor(Math.random() * 8);
+
+    [illusionOrder[0], illusionOrder[j]] =
+
+    [illusionOrder[j], illusionOrder[0]];
+
+  }
   illusionOrder.unshift(1);
 }
 
