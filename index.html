@@ -426,6 +426,7 @@ let colorShiftTimeout = null;
 let colorShiftFakeTriggered = false;
 let colorShiftIllusionTriggered = false;
 let colorLieSwapped = false;
+let colorLieOriginalColor = '#ffffff';
 let pulseTime = 0;
 let pulseDuration = 300; // Millisekunden
 let framesInvisible = false;
@@ -771,7 +772,8 @@ function activateColorLie() {
   frameColor = colorLiePalette[
     Math.floor(Math.random() * colorLiePalette.length)
   ];
-
+// Ursprüngliche Farbe des Originalrahmens merken
+colorLieOriginalColor = frameColor;
   // Zufällige Farbe für jeden Fake-Rahmen
   fakeFrames.forEach(f => {
     f.color = colorLiePalette[
@@ -824,6 +826,7 @@ function newTargetWord() {
 hintDisabled = (getIllusionRound() === 4);
   
 const hintEl = document.getElementById('wordHint');
+hintEl.style.color = '#ffffff';
 
 if (!voidHintLocked) {
   gameElement.classList.remove('void-hint-hidden');
@@ -858,15 +861,18 @@ if (getIllusionRound() === 3) {
 
     colorLieSwapped = false;
 
-    colorShiftTimeout = setTimeout(() => {
+colorShiftTimeout = setTimeout(() => {
 
-      if(gameRunning && getIllusionRound() === 2){
+  if(gameRunning && getIllusionRound() === 2){
 
-        swapColorLieOnce();
+    swapColorLieOnce();
 
-      }
+    // Hint bekommt die ursprüngliche Originalrahmenfarbe
+    hintEl.style.color = colorLieOriginalColor;
 
-    }, 6000);
+  }
+
+}, 6000);
 
   } else {
   // Neuen Timer speichern
