@@ -586,6 +586,7 @@ let voidBlinkRestoreTimer = null;
 let voidEndTimer = null;
 let voidTriggeredForRound5 = false;
 let voidHintLocked = false;
+let voidIntroStarted = false;
 function clearVoidTimers() {
   [
     voidStartTimer,
@@ -638,7 +639,9 @@ function startRound5Void() {
         'void-reset-visible',
         'void-reset-blink-hidden'
       );
-      
+    // Fake-Intro verschwindet mit der Rückkehr des Spiels
+    document.getElementById('introPreviewOverlay')?.remove();
+     voidIntroStarted = false;
       voidHintLocked = true; 
       gameElement.classList.add('void-hint-hidden');
     
@@ -1912,6 +1915,19 @@ document.getElementById('introPreviewOverlay')?.remove();
 
 
 function restartGame() {
+    // ===== THE VOID: FAKE RESTART =====
+  if (gameElement.classList.contains('void-hidden')) {
+
+    if (
+      gameElement.classList.contains('void-reset-visible') &&
+      !voidIntroStarted
+    ) {
+      voidIntroStarted = true;
+      startFallingIntroText();
+    }
+
+    return;
+  }
   resetRound5Void();
 
   round = 1;
