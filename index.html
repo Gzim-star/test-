@@ -640,8 +640,8 @@ function startRound5Void() {
         'void-reset-blink-hidden'
       );
     // Fake-Intro verschwindet mit der Rückkehr des Spiels
-    document.getElementById('introPreviewOverlay')?.remove();
-     voidIntroStarted = false;
+     stopVoidFakeIntro();
+      voidIntroStarted = false;
       voidHintLocked = true; 
       gameElement.classList.add('void-hint-hidden');
     
@@ -1913,6 +1913,200 @@ document.getElementById('introPreviewOverlay')?.remove();
   }
 }
 
+let voidFakeIntroTimer = null;
+let voidFakeIntroFrame = null;
+
+function stopVoidFakeIntro() {
+  clearTimeout(voidFakeIntroTimer);
+
+  if (voidFakeIntroFrame !== null) {
+    cancelAnimationFrame(voidFakeIntroFrame);
+    voidFakeIntroFrame = null;
+  }
+
+  document.getElementById('voidFakeIntro')?.remove();
+}
+
+function startVoidFakeIntro() {
+  stopVoidFakeIntro();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'voidFakeIntro';
+
+  Object.assign(overlay.style, {
+    position: 'fixed',
+    inset: '0',
+    width: '100%',
+    height: '100%',
+    background: '#000',
+    zIndex: '20000',
+    overflow: 'hidden'
+  });
+
+  document.body.appendChild(overlay);
+
+  // ORIGINAL WORD FALL INTRO
+  const originalIntro = document.getElementById('introScreen');
+
+  if (originalIntro) {
+    const introClone = originalIntro.cloneNode(true);
+    introClone.style.display = 'flex';
+    introClone.style.opacity = '1';
+    introClone.style.position = 'absolute';
+    introClone.style.inset = '0';
+    introClone.style.width = '100%';
+    introClone.style.height = '100%';
+    introClone.style.zIndex = '2';
+
+    overlay.appendChild(introClone);
+  }
+
+  // AFTER THE TITLE: FALLING LETTERS + INTRO TEXT
+  voidFakeIntroTimer = setTimeout(() => {
+    if (!document.getElementById('voidFakeIntro')) return;
+
+    overlay.innerHTML = '';
+
+    const rain = document.createElement('canvas');
+    rain.width = window.innerWidth * 2;
+    rain.height = window.innerHeight * 2;
+
+    Object.assign(rain.style, {
+      position: 'absolute',
+      inset: '0',
+      width: '100%',
+      height: '100%'
+    });
+
+    overlay.appendChild(rain);
+
+    const rainCtx = rain.getContext('2d');
+    rainCtx.scale(2, 2);
+
+    const columns = Math.ceil(window.innerWidth / 18);
+    const drops = Array(columns).fill(0).map(
+      () => Math.random() * -window.innerHeight
+    );
+
+    function animateRain() {
+      if (!document.getElementById('voidFakeIntro')) return;
+
+      rainCtx.fillStyle = 'rgba(0,0,0,0.18)';
+      rainCtx.fillRect(
+        0, 0, window.innerWidth, window.innerHeight
+      );
+
+      rainCtx.fillStyle = '#fff';
+      rainCtx.font = '12px monospace';
+
+      drops.forEach((y, i) => {
+        const letter = String.fromCharCode(
+          65 + Math.floor(Math.random() * 26)
+        );
+
+        rainCtx.fillText(letter, i * 18, y);
+        drops[i] += 2 + Math.random() * 3;
+
+        if (y > window.innerHeight) {
+          drops[i] = -Math.random() * 200;
+        }
+      });
+
+      voidFakeIntroFrame = requestAnimationFrame(animateRain);
+    }
+
+    animateRain();
+
+    const lines = [
+      'Not everything is',
+      'what it seems.',
+      '',
+      'Word Fall is more than',
+      'a word game.',
+      'It is a challenge of',
+      'attention, perception,',
+      'and concentration.',
+      '',
+      'Letters fall. Words appear.',
+      'Frames compete for',
+      'your attention.',
+      'What seems obvious may',
+      'not be correct, and what',
+      'looks familiar may deceive you.',
+      '',
+      'With every round,',
+      'the challenge changes.',
+      'Your eyes search for patterns,',
+      'your mind looks for answers,',
+      'and your confidence is',
+      'put to the test.',
+      '',
+      'There is no guarantee',
+      'that what you see is',
+      'what you think it is.',
+      '',
+      'Observe carefully.',
+      'Think clearly.',
+      'Trust your perception',
+      '— but question it.',
+      '',
+      'Can you see beyond',
+      'the illusion?',
+      '',
+      'Built by Gëzim Hasani'
+    ];
+
+    const text = document.createElement('div');
+
+    Object.assign(text.style, {
+      position: 'absolute',
+      inset: '0',
+      zIndex: '3',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: '20px 12px',
+      boxSizing: 'border-box',
+      color: '#fff',
+      fontFamily: 'monospace',
+      fontSize: 'clamp(8px, 2.5vw, 12px)',
+      lineHeight: '1.45',
+      textAlign: 'center',
+      textShadow: '0 0 5px #fff',
+      pointerEvents: 'none'
+    });
+
+    lines.forEach((line, index) => {
+      const row = document.createElement('div');
+      row.textContent = line || '\u00a0';
+
+      Object.assign(row.style, {
+        opacity: '0',
+        transform: 'translateY(-35px)',
+        animation: 'voidTextFall 0.7s ease-out forwards',
+        animationDelay: `${index * 0.12}s`
+      });
+
+      text.appendChild(row);
+    });
+
+    overlay.appendChild(text);
+
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes voidTextFall {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    `;
+    overlay.appendChild(style);
+
+  }, 5800);
+}
+
 
 function restartGame() {
     // ===== THE VOID: FAKE RESTART =====
@@ -1923,7 +2117,7 @@ function restartGame() {
       !voidIntroStarted
     ) {
       voidIntroStarted = true;
-      startFallingIntroText();
+     startVoidFakeIntro();
     }
 
     return;
