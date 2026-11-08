@@ -258,9 +258,9 @@ body.correct-answer-flash::after {
   
   <div class="controls">
     <button onclick="startGame()">START</button>
-    <button onclick="move(-1)">◀</button>
+    <button onclick="moveControl(-1)">◀</button>
     <button onclick="dropFast()">▼</button>
-    <button onclick="move(1)">▶</button>
+    <button onclick="moveControl(1)">▶</button>
     <button onclick="restartGame()">RESET</button>
   </div>
 </div>
@@ -1198,7 +1198,15 @@ function drop() {
   player.pos.y++;
   if(collide(arena,player)){ player.pos.y--; merge(arena,player); checkAndClearWords(); clearDiagonalSixByColor(); resetPlayer(); }
 }
+// ===== ILLUSION 9: THE CONTROL LIE =====
+function moveControl(dir) {
 
+  if (getIllusionRound() === 9) {
+    dir = -dir;
+  }
+
+  move(dir);
+}
 /* ===== WORD DETECTION ===== */
 function checkAndClearWords() {
   clearHighlights();
