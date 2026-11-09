@@ -368,6 +368,7 @@ const arena = Array.from({ length: 20 }, () => Array(10).fill(null));
 const highlights = Array.from({ length: 20 }, () => Array(10).fill(null));
 
 const player = { pos: { x: 0, y: 0 }, letter: '' };
+let illusion9Launching = false;
 let targetWord = '';
 let gameRunning = false;
 let hintRevealed = false;
@@ -1193,10 +1194,18 @@ function merge(arena, player) {
   }
 }
 function move(dir) { player.pos.x += dir; if(collide(arena, player)) player.pos.x -= dir; }
-function drop() { 
-  if(!gameRunning) return;
+function drop() {
+  if (!gameRunning || illusion9Launching) return;
+
   player.pos.y++;
-  if(collide(arena,player)){ player.pos.y--; merge(arena,player); checkAndClearWords(); clearDiagonalSixByColor(); resetPlayer(); }
+
+  if (collide(arena,player)) {
+    player.pos.y--;
+    merge(arena,player);
+    checkAndClearWords();
+    clearDiagonalSixByColor();
+    resetPlayer();
+  }
 }
 // ===== ILLUSION 9: THE CONTROL LIE =====
 function moveControl(dir) {
@@ -1866,10 +1875,31 @@ let lastTime=0, dropCounter=0, dropInterval=700;
 function update(time=0){
   const delta = time - lastTime;
   lastTime=time;
-  if(gameRunning){
-    dropCounter+=delta;
-    if(dropCounter>dropInterval){ drop(); dropCounter=0; }
+if (gameRunning) {
+
+  if (illusion9Launching) {
+
+    // Buchstabe fliegt nach oben
+    player.pos.y -= delta * 0.018;
+
+    // Sobald er den Bildschirm verlassen hat
+    if (player.pos.y < -1) {
+      illusion9Launching = false;
+      resetPlayer();
+      dropCounter = 0;
+    }
+
+  } else {
+
+    dropCounter += delta;
+
+    if (dropCounter > dropInterval) {
+      drop();
+      dropCounter = 0;
+    }
+
   }
+}
   draw();
   requestAnimationFrame(update);
 }
@@ -1915,6 +1945,7 @@ function restartGame() {
   resetRound5Void();
 
   round = 1;
+  illusion9Launching = false;
   frameColor = originalFrameColors[0];
   mindMessageShown = false;
   framesInvisible = false;
@@ -1947,7 +1978,28 @@ function restartGame() {
   updateRoundDisplay();
 }
 
-function dropFast(){ if(!gameRunning) return; while(!collide(arena,player)){ player.pos.y++; } player.pos.y--; merge(arena,player); checkAndClearWords(); clearDiagonalSixByColor(); resetPlayer(); }
+function dropFast() {
+
+  if (!gameRunning || illusion9Launching) return;
+
+  if (getIllusionRound() === 9) {
+
+    illusion9Launching = true;
+    return;
+
+  }
+
+  // Normales Drop-Verhalten
+  while (!collide(arena, player)) {
+    player.pos.y++;
+  }
+
+  player.pos.y--;
+  merge(arena, player);
+  checkAndClearWords();
+  clearDiagonalSixByColor();
+  resetPlayer();
+}
 
 /* ===== INIT ===== */
 // Intro fade out + start falling letters
