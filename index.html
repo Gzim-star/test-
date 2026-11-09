@@ -132,7 +132,32 @@ canvas {
   transition:opacity 1.5s;
 } 
 
+/* ===== THE VOID: FAKE COUNTDOWN ===== */
+#voidFakeCountdown {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #ff0000;
+  font-family: monospace;
+  font-size: clamp(22px, 7vw, 34px);
+  font-weight: bold;
+  letter-spacing: 2px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10001;
+  transition: opacity 0.2s ease;
+  white-space: nowrap;
+}
 
+.game.void-hidden #voidFakeCountdown {
+  opacity: 1;
+}
+
+.game.void-hidden.void-countdown-finished #voidFakeCountdown {
+  opacity: 0;
+}
 /* ===== ROUND 5: THE VOID ===== */
 .game .hint,
 .game canvas,
@@ -255,7 +280,9 @@ body.correct-answer-flash::after {
 ">
   0/10
 </div>
-  
+  <div id="voidFakeCountdown" aria-hidden="true">
+  00:00:10
+</div>
   <div class="controls">
     <button onclick="startGame()">START</button>
     <button onclick="moveControl(-1)">◀</button>
@@ -584,6 +611,8 @@ let voidResetTimer = null;
 let voidBlinkTimer = null;
 let voidBlinkRestoreTimer = null;
 let voidEndTimer = null;
+let voidCountdownInterval = null;
+let voidCountdownHideTimer = null;
 let voidTriggeredForRound5 = false;
 let voidHintLocked = false;
 function clearVoidTimers() {
@@ -602,8 +631,21 @@ function clearVoidTimers() {
   voidBlinkTimer = null;
   voidBlinkRestoreTimer = null;
   voidEndTimer = null;
+  
+  if (voidCountdownInterval !== null) {
+    clearInterval(voidCountdownInterval);
+  }
+
+  if (voidCountdownHideTimer !== null) {
+    clearTimeout(voidCountdownHideTimer);
+  }
+
+  voidCountdownInterval = null;
+  voidCountdownHideTimer = null;
+
 }
 
+  
 function startRound5Void() {
   if (getIllusionRound() !== 5 || voidTriggeredForRound5) return;
 
@@ -616,7 +658,35 @@ function startRound5Void() {
     // Nur die Sichtbarkeit verändern.
     // Die Spiellogik und Animation laufen weiter.
     gameElement.classList.add('void-hidden');
+    // THE FAKE COUNTDOWN – unabhängig vom echten VOID-Timer
+    const countdownEl = document.getElementById('voidFakeCountdown');
 
+    let remaining = 10;
+
+    countdownEl.textContent = '00:00:10';
+
+    gameElement.classList.remove('void-countdown-finished');
+
+    voidCountdownInterval = setInterval(() => {
+
+      remaining--;
+
+      countdownEl.textContent =
+        '00:00:' + String(remaining).padStart(2, '0');
+
+      if (remaining <= 0) {
+
+        clearInterval(voidCountdownInterval);
+        voidCountdownInterval = null;
+
+        // Null kurz anzeigen, dann vollständig verschwinden
+        voidCountdownHideTimer = setTimeout(() => {
+          gameElement.classList.add('void-countdown-finished');
+        }, 250);
+
+      }
+
+    }, 1000);
     // RESET erscheint nach 6 Sekunden
     voidResetTimer = setTimeout(() => {
       gameElement.classList.add('void-reset-visible');
