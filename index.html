@@ -150,7 +150,9 @@ canvas {
   transition: opacity 0.2s ease;
   white-space: nowrap;
 }
-
+#voidFakeCountdown {
+  opacity: 0;
+}
 .game.void-hidden #voidFakeCountdown {
   opacity: 1;
 }
@@ -670,6 +672,8 @@ setTimeout(() => {
 
   gameElement.classList.remove('void-countdown-finished');
 
+  countdownEl.style.opacity = '1';
+  
   voidCountdownInterval = setInterval(() => {
 
     remaining--;
