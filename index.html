@@ -658,35 +658,39 @@ function startRound5Void() {
     // Nur die Sichtbarkeit verändern.
     // Die Spiellogik und Animation laufen weiter.
     gameElement.classList.add('void-hidden');
-    // THE FAKE COUNTDOWN – unabhängig vom echten VOID-Timer
-    const countdownEl = document.getElementById('voidFakeCountdown');
 
-    let remaining = 10;
+// THE FAKE COUNTDOWN – erscheint 15 Sekunden nach dem Verschwinden
+setTimeout(() => {
 
-    countdownEl.textContent = '00:00:10';
+  const countdownEl = document.getElementById('voidFakeCountdown');
 
-    gameElement.classList.remove('void-countdown-finished');
+  let remaining = 10;
 
-    voidCountdownInterval = setInterval(() => {
+  countdownEl.textContent = '00:00:10';
 
-      remaining--;
+  gameElement.classList.remove('void-countdown-finished');
 
-      countdownEl.textContent =
-        '00:00:' + String(remaining).padStart(2, '0');
+  voidCountdownInterval = setInterval(() => {
 
-      if (remaining <= 0) {
+    remaining--;
 
-        clearInterval(voidCountdownInterval);
-        voidCountdownInterval = null;
+    countdownEl.textContent =
+      '00:00:' + String(remaining).padStart(2, '0');
 
-        // Null kurz anzeigen, dann vollständig verschwinden
-        voidCountdownHideTimer = setTimeout(() => {
-          gameElement.classList.add('void-countdown-finished');
-        }, 250);
+    if (remaining <= 0) {
 
-      }
+      clearInterval(voidCountdownInterval);
+      voidCountdownInterval = null;
 
-    }, 1000);
+      voidCountdownHideTimer = setTimeout(() => {
+        gameElement.classList.add('void-countdown-finished');
+      }, 250);
+
+    }
+
+  }, 1000);
+
+}, 15000);
     // RESET erscheint nach 6 Sekunden
     voidResetTimer = setTimeout(() => {
       gameElement.classList.add('void-reset-visible');
