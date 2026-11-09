@@ -245,7 +245,10 @@ body.correct-answer-flash::after {
 </div>
   <canvas id="wordFallCanvas" width="300" height="600"></canvas>
 <div id="mindMessage"></div>
-<div id="roundDisplay" style="
+<div id="fakeTimer" style="display:none;color:red;font-size:32px;">
+00:00:10
+</div>
+  <div id="roundDisplay" style="
     position: relative;
     top: 65px;        /* + Wert = runter | - Wert = hoch */
     color: white;
@@ -616,7 +619,23 @@ function startRound5Void() {
     // Nur die Sichtbarkeit verändern.
     // Die Spiellogik und Animation laufen weiter.
     gameElement.classList.add('void-hidden');
+let seconds = 10;
 
+setTimeout(() => {
+  const timer = document.getElementById('fakeTimer');
+  timer.style.display = 'block';
+
+  const countdown = setInterval(() => {
+    seconds--;
+    timer.textContent = '00:00:' + String(seconds).padStart(2, '0');
+
+    if (seconds <= 0) {
+      clearInterval(countdown);
+      timer.style.display = 'none';
+    }
+  }, 1000);
+
+}, 15000);
     // RESET erscheint nach 6 Sekunden
     voidResetTimer = setTimeout(() => {
       gameElement.classList.add('void-reset-visible');
