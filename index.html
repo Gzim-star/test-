@@ -145,7 +145,7 @@ canvas {
   white-space: nowrap;
   letter-spacing: 2px;
 
-  padding: 10px 8px;
+  padding: 6px 5px;
   border: 1px solid rgba(255, 30, 30, 0.7);
   border-radius: 8px;
 
@@ -164,7 +164,6 @@ canvas {
 .game .controls button {
   transition: opacity 0.8s ease;
 }
-
 .game.void-hidden .hint,
 .game.void-hidden canvas,
 .game.void-hidden #mindMessage,
@@ -173,23 +172,26 @@ canvas {
   opacity: 0 !important;
   pointer-events: none !important;
 }
-
 /* RESET bleibt nach 6 Sekunden sichtbar */
 .game.void-hidden:not(.void-reset-visible) .controls button:last-child {
   opacity: 0 !important;
   pointer-events: none !important;
 }
-
 /* RESET verschwindet während des zusätzlichen Tricks */
 .game.void-hidden.void-reset-blink-hidden .controls button:last-child {
   opacity: 0 !important;
   pointer-events: none !important;
 }
+.game.void-hidden.void-reset-visible .controls button:last-child {
+  color: #ff3030;
+  border-color: #ff3030;
+  text-shadow: 0 0 8px red;
+  box-shadow: 0 0 12px rgba(255, 0, 0, 0.5);
+}
 /* HINT bleibt nach THE VOID unsichtbar */
 .game.void-hint-hidden #wordHint {
   visibility: hidden !important;
 }
-/* ===== ONE RED FLASH ===== */
 /* ===== WRONG WORD EFFECT ===== */
 body.wrong-answer-flash::after {
   content: "WRONG!";
@@ -670,14 +672,28 @@ fakeVoidDelay = setTimeout(() => {
     timer.textContent =
       '00:00:' + String(seconds).padStart(2, '0');
 
-    if (seconds <= 0) {
-      clearInterval(fakeVoidInterval);
-      fakeVoidInterval = null;
+if (seconds <= 0) {
+  clearInterval(fakeVoidInterval);
+  fakeVoidInterval = null;
 
-      setTimeout(() => {
-        timer.style.display = 'none';
-      }, 500);
-    }
+  // Fake-Timer verschwindet
+  timer.style.display = 'none';
+
+  // Den ursprünglichen 60-Sekunden-Endtimer stoppen
+  clearTimeout(voidEndTimer);
+  voidEndTimer = null;
+
+  // THE VOID beenden
+  gameElement.classList.remove(
+    'void-hidden',
+    'void-reset-visible',
+    'void-reset-blink-hidden'
+  );
+
+  // Hint bleibt bis zur nächsten Runde unsichtbar
+  voidHintLocked = true;
+  gameElement.classList.add('void-hint-hidden');
+}
 
   }, 1000);
 
