@@ -1818,6 +1818,32 @@ if (window.visualViewport) {
   window.introTextAnim = requestAnimationFrame(animate);
 }
 
+/* ===== ROUND 1: OPTICAL WORD TRAP ===== */
+function drawRoundOneHintLetters() {
+
+  if (getIllusionRound() !== 1 || !targetWord) return;
+
+  // Ersten Buchstaben absichtlich weglassen
+  const visibleLetters = targetWord.slice(1);
+
+  ctx.save();
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '1px monospace';
+
+  // Buchstaben senkrecht im Originalrahmen anzeigen
+  visibleLetters.split('').forEach((letter, index) => {
+    ctx.fillText(
+      letter,
+      frameX + 0.5,
+      frameY + index + 0.5
+    );
+  });
+
+  ctx.restore();
+}
+
 /* ===== DRAW ===== */
 function clearHighlights(){ highlights.forEach(r=>r.fill(null)); }
 
@@ -1931,6 +1957,8 @@ ctx.strokeRect(f.x+0.05, f.y-0.27, 0.9, frameH-0.2);
 ctx.globalAlpha = 1;
   });
 
+ // Runde 1: Optische Buchstaben im Originalrahmen
+drawRoundOneHintLetters(); 
 arena.forEach((row,y)=>{
   row.forEach((v,x)=>{
     if(v){ 
