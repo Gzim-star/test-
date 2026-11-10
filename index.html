@@ -1823,7 +1823,6 @@ function drawRoundOneHintLetters() {
 
   if (getIllusionRound() !== 1 || !targetWord) return;
 
-  // Ersten Buchstaben absichtlich weglassen
   const visibleLetters = targetWord.slice(1);
 
   ctx.save();
@@ -1832,12 +1831,11 @@ function drawRoundOneHintLetters() {
   ctx.textBaseline = 'middle';
   ctx.font = '1px monospace';
 
-  // Buchstaben senkrecht im Originalrahmen anzeigen
   visibleLetters.split('').forEach((letter, index) => {
     ctx.fillText(
       letter,
       frameX + 0.5,
-      frameY + index + 0.5
+      frameY + index + 1.5
     );
   });
 
