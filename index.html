@@ -31,7 +31,7 @@ html, body {
   align-items: center;
 }
 
-.hint { 
+.hint {
   color: #fff;
   font-size: 24px;
   margin-bottom: 10px;
@@ -132,8 +132,7 @@ canvas {
   transition:opacity 1.5s;
 } 
   /* ===== THE VOID FAKE TIMER ===== */
-  #fakeTimer,
-  #fakeVoidUpTimer {
+  #fakeTimer {
   display: none;
   position: fixed;
   top: 50%;
@@ -270,7 +269,6 @@ body.correct-answer-flash::after {
   <canvas id="wordFallCanvas" width="300" height="600"></canvas>
 <div id="mindMessage"></div>
  <div id="fakeTimer">00:00:10</div>
-  <div id="fakeVoidUpTimer">00:00:00</div>
   <div id="roundDisplay" style="
     position: relative;
     top: 65px;        /* + Wert = runter | - Wert = hoch */
@@ -607,7 +605,6 @@ const gameElement = document.querySelector('.game');
 
 let fakeVoidDelay = null;
 let fakeVoidInterval = null;
-let fakeVoidUpInterval = null;
 let voidStartTimer = null;
 let voidResetTimer = null;
 let voidBlinkTimer = null;
@@ -684,7 +681,7 @@ fakeVoidDelay = setTimeout(() => {
 
   }, 1000);
 
-}, 15000);
+}, 25000);
     // RESET erscheint nach 6 Sekunden
     voidResetTimer = setTimeout(() => {
       gameElement.classList.add('void-reset-visible');
@@ -694,42 +691,13 @@ fakeVoidDelay = setTimeout(() => {
     voidBlinkTimer = setTimeout(() => {
       gameElement.classList.add('void-reset-blink-hidden');
 
-voidBlinkRestoreTimer = setTimeout(() => {
-  gameElement.classList.remove('void-reset-blink-hidden');
-
-  // ===== SECOND FAKE TIMER: COUNT UP =====
-  const upTimer = document.getElementById('fakeVoidUpTimer');
-
-  clearInterval(fakeVoidUpInterval);
-
-  let elapsed = 0;
-
-  upTimer.textContent = '00:00:00';
-  upTimer.style.display = 'block';
-
-  fakeVoidUpInterval = setInterval(() => {
-
-    elapsed++;
-
-    upTimer.textContent =
-      '00:00:' + String(elapsed).padStart(2, '0');
-
-  }, 1000);
-
-}, 3000);
-    
+      voidBlinkRestoreTimer = setTimeout(() => {
+        gameElement.classList.remove('void-reset-blink-hidden');
+      }, 3000);
     }, 25000);
 
     // Nach insgesamt 60 Sekunden alles wieder sichtbar machen
     voidEndTimer = setTimeout(() => {
-    
-clearInterval(fakeVoidUpInterval);
- fakeVoidUpInterval = null;
-
-  const upTimer = document.getElementById('fakeVoidUpTimer');
-    upTimer.style.display = 'none';
-     upTimer.textContent = '00:00:00';
-      
       gameElement.classList.remove(
         'void-hidden',
         'void-reset-visible',
@@ -745,16 +713,10 @@ clearInterval(fakeVoidUpInterval);
 }
 
 function resetRound5Void() {
-clearVoidTimers();
-clearTimeout(fakeVoidDelay);
-clearInterval(fakeVoidInterval);
-clearInterval(fakeVoidUpInterval);
-fakeVoidUpInterval = null;
+  clearVoidTimers();
+  clearTimeout(fakeVoidDelay);
+  clearInterval(fakeVoidInterval);
 
-const upTimer = document.getElementById('fakeVoidUpTimer');
-upTimer.style.display = 'none';
-upTimer.textContent = '00:00:00';
-  
 fakeVoidDelay = null;
 fakeVoidInterval = null;
 
