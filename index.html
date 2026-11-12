@@ -403,8 +403,7 @@ let hintHideTimeout = null;
 let illusion3HintTimer = null;
 let illusion3HintActive = false;
 let illusion3FakeHints = [];
-let illusion9FakeHint = '';
-let illusion9FakeHintVisible = false;
+let illusion9FakeHints = [];
 // 🔲 FRAME POSITION (GLOBAL)
 let frameX = 0;
 let frameY = 0;
@@ -929,7 +928,7 @@ clearTimeout(hintHideTimeout);
 stopIllusion3HintCycle();
 
 hintRevealed = false;
-
+illusion9FakeHints = [];
 // Hint wieder sichtbar machen
 hintEl.style.visibility = 'visible';
 
@@ -1082,17 +1081,15 @@ function revealHint(){
 
   if(getIllusionRound() === 9){
     // 🎭 Fake Hint zuerst
-const fakeWord = getFakeWord(targetWord);
+ const fakeWord = getFakeWord(targetWord);
 
-illusion9FakeHint = fakeWord.toUpperCase();
-illusion9FakeHintVisible = true;
+illusion9FakeHints.push(fakeWord.toUpperCase());
 
-  hintEl.textContent = fakeWord;
+ hintEl.textContent = fakeWord;
 
     setTimeout(() => {
      
-      illusion9FakeHintVisible = false;
-      // Original-Wort zeigen
+   // Original-Wort zeigen
       hintEl.textContent = targetWord;
 
       setTimeout(() => {
@@ -1332,8 +1329,7 @@ if (
 
 if (
   getIllusionRound() === 9 &&
-  illusion9FakeHintVisible &&
-  upperLetters === illusion9FakeHint
+  illusion9FakeHints.includes(upperLetters)
 ) {
   falseHintFound = true;
 }
