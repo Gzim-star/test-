@@ -402,6 +402,9 @@ let hintHideTimeout = null;
 // ===== ILLUSION 3: THE ECHO HINT CYCLE =====
 let illusion3HintTimer = null;
 let illusion3HintActive = false;
+let illusion3FakeHints = [];
+let illusion9FakeHint = '';
+let illusion9FakeHintVisible = false;
 // 🔲 FRAME POSITION (GLOBAL)
 let frameX = 0;
 let frameY = 0;
@@ -1029,7 +1032,13 @@ function startIllusion3HintCycle() {
     candidates[0],
     candidates[1]
   ];
-
+  
+  illusion3FakeHints = [
+  candidates[0].toUpperCase(),
+  candidates[1].toUpperCase()
+  
+  ];
+  
   const hintEl = document.getElementById('wordHint');
 
   const expectedRound = round;
