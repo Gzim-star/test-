@@ -1032,12 +1032,10 @@ function startIllusion3HintCycle() {
     candidates[0],
     candidates[1]
   ];
-  
-  illusion3FakeHints = [
-  candidates[0].toUpperCase(),
+    illusion3FakeHints = [
+   candidates[0].toUpperCase(),
   candidates[1].toUpperCase()
-  
-  ];
+];
   
   const hintEl = document.getElementById('wordHint');
 
@@ -1084,10 +1082,16 @@ function revealHint(){
 
   if(getIllusionRound() === 9){
     // 🎭 Fake Hint zuerst
-    const fakeWord = getFakeWord(targetWord);
-    hintEl.textContent = fakeWord;
+const fakeWord = getFakeWord(targetWord);
+
+illusion9FakeHint = fakeWord.toUpperCase();
+illusion9FakeHintVisible = true;
+
+  hintEl.textContent = fakeWord;
 
     setTimeout(() => {
+     
+      illusion9FakeHintVisible = false;
       // Original-Wort zeigen
       hintEl.textContent = targetWord;
 
@@ -1313,9 +1317,27 @@ function checkAndClearWords() {
   let targetFound = false;
   let fakeFrameHit = false;
   let targetWordFound = false;
+  let falseHintFound = false;
   
   found.forEach(group=>{
     const letters = group.map(([y,x])=>arena[y][x]).join('');
+    const upperLetters = letters.toUpperCase();
+
+if (
+  getIllusionRound() === 3 &&
+  illusion3FakeHints.includes(upperLetters)
+) {
+  falseHintFound = true;
+}
+
+if (
+  getIllusionRound() === 9 &&
+  illusion9FakeHintVisible &&
+  upperLetters === illusion9FakeHint
+) {
+  falseHintFound = true;
+}
+
 if(letters.toUpperCase() === targetWord){
  targetWordFound = true;
   const inOriginalFrame = group.every(([y,x])=> 
@@ -1362,7 +1384,7 @@ if(targetFound){
   stopIllusion3HintCycle();
   flashCorrectAnswer();
 }
-else if(targetWordFound){
+else if(targetWordFound || falseHintFound){
   flashWrongAnswer();
 }
   
