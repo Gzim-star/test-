@@ -956,6 +956,9 @@ if (!voidHintLocked) {
 // Alte Hint-Timer stoppen
 clearTimeout(hintHideTimeout);
 stopIllusion3HintCycle();
+stopIllusion4HintCycle();
+
+illusion4FakeHints = [];
 
 hintRevealed = false;
 illusion9FakeHints = [];
@@ -1045,6 +1048,8 @@ function getFakeWord(originalWord) {
   return candidates[index].toUpperCase();
 }
 // ===== ILLUSION 3: THE ECHO HINT CYCLE =====
+
+// ===== ILLUSION 3: THE ECHO HINT CYCLE =====
 function stopIllusion3HintCycle() {
   clearTimeout(illusion3HintTimer);
   illusion3HintTimer = null;
@@ -1071,11 +1076,46 @@ function startIllusion3HintCycle() {
     candidates[0],
     candidates[1]
   ];
-    illusion3FakeHints = [
-   candidates[0].toUpperCase(),
-  candidates[1].toUpperCase()
-];
-  // ===== ILLUSION 4: FOUR HINTS =====
+
+  illusion3FakeHints = [
+    candidates[0].toUpperCase(),
+    candidates[1].toUpperCase()
+  ];
+
+  const hintEl = document.getElementById('wordHint');
+  const expectedRound = round;
+  const expectedTarget = targetWord;
+  let index = 0;
+
+  illusion3HintActive = true;
+
+  hintEl.style.visibility = 'visible';
+  hintEl.textContent = hints[0];
+
+  function showNextHint() {
+
+    if (
+      !illusion3HintActive ||
+      round !== expectedRound ||
+      targetWord !== expectedTarget ||
+      getIllusionRound() !== 3
+    ) {
+      stopIllusion3HintCycle();
+      return;
+    }
+
+    index = (index + 1) % hints.length;
+
+    hintEl.style.visibility = 'visible';
+    hintEl.textContent = hints[index];
+
+    illusion3HintTimer = setTimeout(showNextHint, 6000);
+  }
+
+  illusion3HintTimer = setTimeout(showNextHint, 6000);
+}
+
+// ===== ILLUSION 4: FOUR HINTS =====
 
 function stopIllusion4HintCycle() {
   clearTimeout(illusion4HintTimer);
@@ -1112,10 +1152,8 @@ function startIllusion4HintCycle() {
   ];
 
   const hintEl = document.getElementById('wordHint');
-
   const expectedRound = round;
   const expectedTarget = targetWord;
-
   let index = 0;
 
   illusion4HintActive = true;
@@ -1144,40 +1182,7 @@ function startIllusion4HintCycle() {
 
   illusion4HintTimer = setTimeout(showNextHint, 6000);
 }
-  const hintEl = document.getElementById('wordHint');
 
-  const expectedRound = round;
-  const expectedTarget = targetWord;
-
-  let index = 0;
-
-  illusion3HintActive = true;
-
-  hintEl.style.visibility = 'visible';
-  hintEl.textContent = hints[0];
-
-  function showNextHint() {
-
-if (
-  !illusion3HintActive ||
-  round !== expectedRound ||
-  targetWord !== expectedTarget ||
-  getIllusionRound() !== 3
-) {
-      stopIllusion3HintCycle();
-      return;
-    }
-
-    index = (index + 1) % hints.length;
-
-    hintEl.style.visibility = 'visible';
-    hintEl.textContent = hints[index];
-
-    illusion3HintTimer = setTimeout(showNextHint, 6000);
-  }
-
-  illusion3HintTimer = setTimeout(showNextHint, 6000);
-}
 
 function revealHint(){
   if (getIllusionRound() === 3) return;
