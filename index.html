@@ -408,6 +408,7 @@ let illusion9FakeHints = [];
 let frameX = 0;
 let frameY = 0;
 let frameH = 10; // Höhe fix
+let illusion10ResizeTimer = null;
 // 🟫 FAKE FRAMES SYSTEM
 let round = 1;
 const maxRounds = 10;
@@ -906,6 +907,9 @@ function shuffleFrameColors() {
 }
   
 function newTargetWord() {
+  clearTimeout(illusion10ResizeTimer);
+  illusion10ResizeTimer = null;
+  
   if (wordQueue.length === 0 || wordIndex >= wordQueue.length) shuffleWords();
 
   targetWord = wordQueue[wordIndex++];
@@ -941,6 +945,29 @@ if (getIllusionRound() === 3) {
 
   randomizeFrame();
   generateFakeFrames();
+  
+if (getIllusionRound() === 10) {
+  const expectedRound = round;
+  const expectedTarget = targetWord;
+
+  illusion10ResizeTimer = setTimeout(() => {
+    if (
+      !gameRunning ||
+      round !== expectedRound ||
+      targetWord !== expectedTarget ||
+      getIllusionRound() !== 10
+    ) return;
+
+    const heights = [4, 6, 8, 10];
+
+    frameH = heights[Math.floor(Math.random() * heights.length)];
+
+    fakeFrames.forEach(f => {
+      f.h = heights[Math.floor(Math.random() * heights.length)];
+    });
+  }, 6000);
+}
+  
   activateColorLie();
   // Alten Timer stoppen
   if(colorShiftTimeout){
@@ -1111,32 +1138,44 @@ illusion9FakeHints.push(fakeWord.toUpperCase());
 }
 function randomizeFrame() {
   frameX = Math.floor(Math.random() * arena[0].length);
-  const minY = 5;
-  const maxY = arena.length - frameH;
-  frameY = Math.floor(Math.random() * (maxY - minY)) + minY;
+
+  if (getIllusionRound() === 10) {
+    frameY = 5 + Math.floor(Math.random() * 6);
+  } else {
+    const minY = 5;
+    const maxY = arena.length - frameH;
+    frameY = Math.floor(Math.random() * (maxY - minY)) + minY;
+  }
 }
 
 function generateFakeFrames() {
   fakeFrames = [];
+
   let fakeCount = getIllusionRound() === 3
-  ? Math.max(2, round - 1)
-  : round - 1;
+    ? Math.max(2, round - 1)
+    : round - 1;
+
   let availableColors = [...COLORS];
 
-  for(let i=0;i<fakeCount;i++){
+  for (let i = 0; i < fakeCount; i++) {
     let fx, fy;
     let valid = false;
 
     let attempts = 0;
     let maxAttempts = 200;
-    
-    while(!valid && attempts < maxAttempts){
-    attempts++;
-      
+
+    while (!valid && attempts < maxAttempts) {
+      attempts++;
+
       fx = Math.floor(Math.random() * arena[0].length);
-      const minY = 5;
-      const maxY = arena.length - frameH;
-      fy = Math.floor(Math.random() * (maxY - minY)) + minY;
+
+      if (getIllusionRound() === 10) {
+        fy = 5 + Math.floor(Math.random() * 6);
+      } else {
+        const minY = 5;
+        const maxY = arena.length - frameH;
+        fy = Math.floor(Math.random() * (maxY - minY)) + minY;
+      }
 
       const overlapsOriginal =
         fx === frameX &&
@@ -1145,26 +1184,31 @@ function generateFakeFrames() {
 
       const overlapsFake = fakeFrames.some(f =>
         f.x === fx &&
-        fy < f.y + frameH &&
+        fy < f.y + (f.h || frameH) &&
         fy + frameH > f.y
       );
 
-      if(!overlapsOriginal && !overlapsFake){
+      if (!overlapsOriginal && !overlapsFake) {
         valid = true;
       }
     }
 
-    if(!valid) continue;   // 🔥 DAS FEHLT BEI DIR
-    // Zufällige Farbe auswählen
+    if (!valid) continue;
+
     let color = shuffledFrameColors[colorIndex];
     colorIndex++;
 
-   if(colorIndex >= shuffledFrameColors.length){
-  shuffleFrameColors();
- colorIndex = 0;
-}
+    if (colorIndex >= shuffledFrameColors.length) {
+      shuffleFrameColors();
+      colorIndex = 0;
+    }
 
-    fakeFrames.push({x: fx, y: fy, color: color});
+    fakeFrames.push({
+      x: fx,
+      y: fy,
+      color: color,
+      ...(getIllusionRound() === 10 ? { h: frameH } : {})
+    });
   }
 }
   
@@ -1340,11 +1384,13 @@ if(letters.toUpperCase() === targetWord){
     x===frameX && y>=frameY && y<frameY+frameH
   );
 
-  const inFakeFrame = fakeFrames.some(f =>
-    group.every(([y,x]) =>
-      x===f.x && y>=f.y && y<f.y+frameH
-    )
-  );
+const inFakeFrame = fakeFrames.some(f =>
+  group.every(([y,x]) =>
+    x === f.x &&
+    y >= f.y &&
+    y < f.y + (f.h || frameH)
+  )
+);
 
   if(getIllusionRound() === 10){
 
@@ -1975,8 +2021,10 @@ ctx.strokeStyle = f.color || '#ffffff';
 ctx.lineWidth = borderWidth;
 
 
-ctx.fillRect(f.x+0.05, f.y-0.27, 0.9, frameH-0.2);
-ctx.strokeRect(f.x+0.05, f.y-0.27, 0.9, frameH-0.2);
+const fakeFrameH = f.h || frameH;
+
+ctx.fillRect(f.x+0.05, f.y-0.27, 0.9, fakeFrameH-0.2);
+ctx.strokeRect(f.x+0.05, f.y-0.27, 0.9, fakeFrameH-0.2);
 
 
 ctx.globalAlpha = 1;
