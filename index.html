@@ -403,7 +403,13 @@ let hintHideTimeout = null;
 let illusion3HintTimer = null;
 let illusion3HintActive = false;
 let illusion3FakeHints = [];
+// ILLUSION 10: THE FOUR HINT CYCLE
+let illusion10HintTimer = null;
+let illusion10HintActive = false;
+let illusion10FakeHints = [];
+
 let illusion9FakeHints = [];
+
 // 🔲 FRAME POSITION (GLOBAL)
 let frameX = 0;
 let frameY = 0;
@@ -943,6 +949,9 @@ if (!voidHintLocked) {
 clearTimeout(hintHideTimeout);
 stopIllusion3HintCycle();
 
+stopIllusion10HintCycle();
+illusion10FakeHints = [];
+  
 hintRevealed = false;
 illusion9FakeHints = [];
 // Hint wieder sichtbar machen
@@ -950,6 +959,10 @@ hintEl.style.visibility = 'visible';
 
 if (getIllusionRound() === 3) {
   startIllusion3HintCycle();
+
+} else if (getIllusionRound() === 10) {
+  startIllusion10HintCycle();
+
 } else {
   hintEl.textContent =
     getMaskedWord(targetWord, getIllusionRound());
@@ -1074,7 +1087,64 @@ function startIllusion3HintCycle() {
    candidates[0].toUpperCase(),
   candidates[1].toUpperCase()
 ];
-  
+  // ===== ILLUSION 10: HINT CUCLE ====
+  function stopIllusion10HintCycle() {
+  clearTimeout(illusion10HintTimer);
+  illusion10HintTimer = null;
+  illusion10HintActive = false;
+}
+
+function startIllusion10HintCycle() {
+
+  stopIllusion10HintCycle();
+
+  if (getIllusionRound() !== 10) return;
+
+  const hints = [targetWord];
+
+  [8, 6, 4].forEach(length => {
+    const candidates = WORDS.filter(word =>
+      word.length === length
+    );
+
+    const fakeWord =
+      candidates[Math.floor(Math.random() * candidates.length)];
+
+    hints.push(fakeWord);
+    illusion10FakeHints.push(fakeWord.toUpperCase());
+  });
+
+  const hintEl = document.getElementById('wordHint');
+  const expectedRound = round;
+  const expectedTarget = targetWord;
+
+  let index = 0;
+
+  illusion10HintActive = true;
+  hintEl.style.visibility = 'visible';
+  hintEl.textContent = hints[0];
+
+  function showNextHint() {
+
+    if (
+      !illusion10HintActive ||
+      round !== expectedRound ||
+      targetWord !== expectedTarget ||
+      getIllusionRound() !== 10
+    ) {
+      stopIllusion10HintCycle();
+      return;
+    }
+
+    index = (index + 1) % hints.length;
+
+    hintEl.textContent = hints[index];
+
+    illusion10HintTimer = setTimeout(showNextHint, 6000);
+  }
+
+  illusion10HintTimer = setTimeout(showNextHint, 6000);
+}
   const hintEl = document.getElementById('wordHint');
 
   const expectedRound = round;
@@ -1112,6 +1182,7 @@ if (
 
 function revealHint(){
   if (getIllusionRound() === 3) return;
+  if (getIllusionRound() === 10) return;
   if(hintDisabled) return;
   if(hintRevealed) return;
 
@@ -1390,6 +1461,13 @@ if (
   falseHintFound = true;
 }
 
+if (
+  getIllusionRound() === 10 &&
+  illusion10FakeHints.includes(upperLetters)
+) {
+  falseHintFound = true;
+}
+    
 if(letters.toUpperCase() === targetWord){
  targetWordFound = true;
   const inOriginalFrame = group.every(([y,x])=> 
