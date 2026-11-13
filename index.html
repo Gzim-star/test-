@@ -452,6 +452,9 @@ function updateRoundDisplay() {
   if(display) display.textContent = round + '/' + maxRounds;
 }
 let fakeFrames = [];
+// ===== ILLUSION 7: THE OPTICAL =====
+let illusion7OpticalFrameIndex = -1;
+let illusion7TrapTriggered = false;
 let pulseActive = false;
 let fakePulseTriggered = false;
 let fakePulseTimeout = null;
@@ -970,6 +973,14 @@ if (getIllusionRound() === 3) {
 
   randomizeFrame();
   generateFakeFrames();
+ // ILLUSION 7: Einen Fake-Rahmen als optische  auswählen
+  illusion7OpticalFrameIndex = -1;
+  illusion7TrapTriggered = false;
+
+if (getIllusionRound() === 7 && fakeFrames.length > 0) {
+  illusion7OpticalFrameIndex =
+    Math.floor(Math.random() * fakeFrames.length);
+} 
   
 if (getIllusionRound() === 10) {
   const expectedRound = round;
@@ -1434,13 +1445,41 @@ function moveControl(dir) {
 
   move(dir);
 }
+
+function detectIllusion7FirstLetter() {
+
+  if (getIllusionRound() !== 7) return false;
+  if (illusion7TrapTriggered) return false;
+
+  const f = fakeFrames[illusion7OpticalFrameIndex];
+
+  if (!f || !targetWord) return false;
+
+  const firstLetter = targetWord[0].toUpperCase();
+
+  // Nur das erste Feld des optischen Fake-Wortes prüfen
+  if (
+    arena[f.y] &&
+    String(arena[f.y][f.x]).toUpperCase() === firstLetter
+  ) {
+    illusion7TrapTriggered = true;
+    return true;
+  }
+
+  return false;
+}
 /* ===== WORD DETECTION ===== */
 function checkAndClearWords() {
   clearHighlights();
+  
+  let fakeFrameHit = detectIllusion7FirstLetter();
+  
   const found = findWords();
+  
   if(!found.length) return;
+  
   let targetFound = false;
-  let fakeFrameHit = false;
+  
   let targetWordFound = false;
   let falseHintFound = false;
   
@@ -1518,7 +1557,7 @@ if(targetFound){
   stopIllusion10HintCycle();
   flashCorrectAnswer();
 }
-else if(targetWordFound || falseHintFound){
+else if(targetWordFound || falseHintFound || fakeFrameHit){
   flashWrongAnswer();
 }
   
@@ -2007,6 +2046,32 @@ function drawRoundOneHintLetters() {
 
   ctx.restore();
 }
+/* ===== ILLUSION 7: OPTICAL FAKE WORD ===== */
+function drawRoundSevenHintLetters() {
+
+  if (getIllusionRound() !== 7 || !targetWord) return;
+
+  const f = fakeFrames[illusion7OpticalFrameIndex];
+  if (!f) return;
+
+  const visibleLetters = targetWord.slice(1);
+
+  ctx.save();
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '1px monospace';
+
+  visibleLetters.split('').forEach((letter, index) => {
+    ctx.fillText(
+      letter,
+      f.x + 0.5,
+      f.y + index + 1.5
+    );
+  });
+
+  ctx.restore();
+}
 
 /* ===== DRAW ===== */
 function clearHighlights(){ highlights.forEach(r=>r.fill(null)); }
@@ -2123,8 +2188,9 @@ ctx.strokeRect(f.x+0.05, f.y-0.27, 0.9, fakeFrameH-0.2);
 ctx.globalAlpha = 1;
   });
 
- // Runde 1: Optische Buchstaben im Originalrahmen
+ // Runde 1: Optische Buchstaben im Originalrahmen und Fakerahmen 
 drawRoundOneHintLetters(); 
+drawRoundSevenHintLetters();
 arena.forEach((row,y)=>{
   row.forEach((v,x)=>{
     if(v){ 
