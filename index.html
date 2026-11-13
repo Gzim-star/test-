@@ -1431,10 +1431,33 @@ function merge(arena, player) {
   }
 }
 function move(dir) { player.pos.x += dir; if(collide(arena, player)) player.pos.x -= dir; }
-function drop() { 
-  if(!gameRunning) return;
+function drop() {
+
+  if (!gameRunning || illusion7TrapTriggered) return;
+
   player.pos.y++;
-  if(collide(arena,player)){ player.pos.y--; merge(arena,player); checkAndClearWords(); clearDiagonalSixByColor(); resetPlayer(); }
+
+  // ILLUSION 7: SENSOR WÄHREND DES FALLENS
+  if (detectIllusion7FirstLetter()) {
+    checkAndClearWords();
+    return;
+  }
+
+  if (collide(arena, player)) {
+
+    player.pos.y--;
+
+    // SENSOR AUCH AN DER LANDPOSITION
+    if (detectIllusion7FirstLetter()) {
+      checkAndClearWords();
+      return;
+    }
+
+    merge(arena, player);
+    checkAndClearWords();
+    clearDiagonalSixByColor();
+    resetPlayer();
+  }
 }
 // ===== ILLUSION 9: THE CONTROL LIE =====
 function moveControl(dir) {
@@ -1450,17 +1473,20 @@ function detectIllusion7FirstLetter() {
 
   if (getIllusionRound() !== 7) return false;
   if (illusion7TrapTriggered) return false;
+  if (!targetWord || !player.letter) return false;
 
   const f = fakeFrames[illusion7OpticalFrameIndex];
-
-  if (!f || !targetWord) return false;
+  if (!f) return false;
 
   const firstLetter = targetWord[0].toUpperCase();
+  const frameHeight = f.h || frameH;
 
-  // Nur das erste Feld des optischen Fake-Wortes prüfen
+  // SENSOR: den fallenden Spieler-Buchstaben prüfen
   if (
-    arena[f.y] &&
-    String(arena[f.y][f.x]).toUpperCase() === firstLetter
+    player.letter.toUpperCase() === firstLetter &&
+    player.pos.x === f.x &&
+    player.pos.y >= f.y &&
+    player.pos.y < f.y + frameHeight
   ) {
     illusion7TrapTriggered = true;
     return true;
@@ -1472,11 +1498,12 @@ function detectIllusion7FirstLetter() {
 function checkAndClearWords() {
   clearHighlights();
   
-  let fakeFrameHit = detectIllusion7FirstLetter();
-  
-  const found = findWords();
-  
-  if(!found.length) return;
+let fakeFrameHit =
+  illusion7TrapTriggered || detectIllusion7FirstLetter();
+
+const found = findWords();
+
+if (!found.length && !fakeFrameHit) return;
   
   let targetFound = false;
   
@@ -1697,7 +1724,7 @@ for(let i=0;i<fakeCount;i++){
     const maxY = arena.length - frameH;
     fy = Math.floor(Math.random() * (maxY - minY)) + minY;
 
-    const overlapsOriginal =
+const overlapsOriginal =
   fx === frameX &&
   fy < frameY + frameH &&
   fy + frameH > frameY;
@@ -2296,8 +2323,33 @@ function restartGame() {
   updateRoundDisplay();
 }
 
-function dropFast(){ if(!gameRunning) return; while(!collide(arena,player)){ player.pos.y++; } player.pos.y--; merge(arena,player); checkAndClearWords(); clearDiagonalSixByColor(); resetPlayer(); }
+function dropFast() {
 
+  if (!gameRunning || illusion7TrapTriggered) return;
+
+  while (!collide(arena, player)) {
+
+    player.pos.y++;
+
+    // SENSOR BEI JEDEM FALLSCHRITT
+    if (detectIllusion7FirstLetter()) {
+      checkAndClearWords();
+      return;
+    }
+  }
+
+  player.pos.y--;
+
+  if (detectIllusion7FirstLetter()) {
+    checkAndClearWords();
+    return;
+  }
+
+  merge(arena, player);
+  checkAndClearWords();
+  clearDiagonalSixByColor();
+  resetPlayer();
+}
 /* ===== INIT ===== */
 // Intro fade out + start falling letters
 setTimeout(()=>{
