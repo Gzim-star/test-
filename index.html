@@ -910,9 +910,21 @@ function newTargetWord() {
   clearTimeout(illusion10ResizeTimer);
   illusion10ResizeTimer = null;
   
+if (getIllusionRound() === 10) {
+
+  const tenLetterWords = WORDS.filter(word => word.length === 10);
+
+  targetWord = tenLetterWords[
+    Math.floor(Math.random() * tenLetterWords.length)
+  ];
+
+} else {
+
   if (wordQueue.length === 0 || wordIndex >= wordQueue.length) shuffleWords();
 
   targetWord = wordQueue[wordIndex++];
+
+}
 
   // 🔹 Rahmenhöhe automatisch an Wortlänge anpassen
   frameH = targetWord.length < 10 ? targetWord.length : 10;
