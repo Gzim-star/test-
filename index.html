@@ -185,14 +185,17 @@ canvas {
 .game.void-hidden canvas,
 .game.void-hidden #mindMessage,
 .game.void-hidden #roundDisplay,
-.game.void-hidden .controls button:not(:last-child) {
+.game.void-hidden .wrong-points,
+.game.void-hidden .controls button {
   opacity: 0 !important;
   pointer-events: none !important;
 }
-/* RESET bleibt nach 6 Sekunden sichtbar */
-.game.void-hidden:not(.void-reset-visible) .controls button:last-child {
-  opacity: 0 !important;
-  pointer-events: none !important;
+
+/* RESET erscheint nach 6 Sekunden */
+.game.void-hidden.void-reset-visible:not(.void-reset-blink-hidden)
+.controls button:last-child {
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
 /* RESET verschwindet während des zusätzlichen Tricks */
 .game.void-hidden.void-reset-blink-hidden .controls button:last-child {
