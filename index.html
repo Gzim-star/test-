@@ -1692,7 +1692,11 @@ else if(targetWordFound || falseHintFound || fakeFrameHit){
 
   // Runde erhöhen (max 9)
   round++;
-   mindMessageShown = false;
+  
+  wrongCount = 0;
+  updateWrongPoints();
+    
+  mindMessageShown = false;
    // Alte Void-Timer bei jedem Rundenwechsel entfernen
 
 resetRound5Void();
