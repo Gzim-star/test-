@@ -38,6 +38,23 @@ html, body {
   font-family: monospace;
 }
 
+/* ===== WRONG POINTS ===== */
+.wrong-points {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+  margin-bottom: 8px;
+  height: 10px;
+}
+
+.wrong-point {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: background 0.25s ease;
+}
+  
 canvas {
   background: #000;
   border: none !important;
@@ -265,6 +282,12 @@ body.correct-answer-flash::after {
   <div class="subtitle">GAME</div>
 </div>
 <div class="game">
+  <div id="wrongPoints" class="wrong-points">
+  <span class="wrong-point"></span>
+  <span class="wrong-point"></span>
+  <span class="wrong-point"></span>
+  <span class="wrong-point"></span>
+</div>
   <div class="hint">
   <span id="wordHint" onclick="revealHint()" style="cursor:pointer;">Hint</span>
 </div>
@@ -452,6 +475,8 @@ function updateRoundDisplay() {
   if(display) display.textContent = round + '/' + maxRounds;
 }
 let fakeFrames = [];
+// ===== WRONG POINTS =====
+let wrongCount = 0;
 // ===== ILLUSION 7: THE OPTICAL =====
 let illusion7OpticalFrameIndex = -1;
 let illusion7TrapTriggered = false;
@@ -1400,8 +1425,28 @@ function triggerOriginalFramePulse() {
   }, 6000);
 
 }  
+  
+ function updateWrongPoints() {
+  const points = document.querySelectorAll('.wrong-point');
+
+  let color = '#ffffff';
+
+  if (wrongCount === 1) color = '#00d66b';
+  if (wrongCount === 2) color = '#ffd600';
+  if (wrongCount === 3) color = '#ff3030';
+
+  points.forEach((point, index) => {
+    point.style.background =
+      index < wrongCount ? 'transparent' : color;
+  });
+} 
   /* ===== GAME LOGIC ===== */
 function flashWrongAnswer() {
+    
+  wrongCount++;
+
+  updateWrongPoints();
+  
   const body = document.body;
 
   body.classList.remove('correct-answer-flash');
