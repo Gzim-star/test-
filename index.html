@@ -2377,6 +2377,10 @@ document.getElementById('introPreviewOverlay')?.remove();
 
 
 function restartGame() {
+
+  wrongCount = 0;
+  updateWrongPoints();
+  
   resetRound5Void();
 
   round = 1;
