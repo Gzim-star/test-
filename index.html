@@ -455,6 +455,8 @@ let fakeFrames = [];
 // ===== ILLUSION 7: THE OPTICAL =====
 let illusion7OpticalFrameIndex = -1;
 let illusion7TrapTriggered = false;
+// ILLUSION 8: OPTICAL FAKE FRAME
+let illusion8OpticalFrameIndex = -1;
 let pulseActive = false;
 let fakePulseTriggered = false;
 let fakePulseTimeout = null;
@@ -976,12 +978,20 @@ if (getIllusionRound() === 3) {
  // ILLUSION 7: Einen Fake-Rahmen als optische  auswählen
   illusion7OpticalFrameIndex = -1;
   illusion7TrapTriggered = false;
-
+  
 if (getIllusionRound() === 7 && fakeFrames.length > 0) {
   illusion7OpticalFrameIndex =
     Math.floor(Math.random() * fakeFrames.length);
 } 
-  
+
+// ILLUSION 8: Einen Fake-Rahmen für das optische Wort auswählen
+illusion8OpticalFrameIndex = -1;
+
+if (getIllusionRound() === 8 && fakeFrames.length > 0) {
+  illusion8OpticalFrameIndex =
+    Math.floor(Math.random() * fakeFrames.length);
+}
+
 if (getIllusionRound() === 10) {
   const expectedRound = round;
   const expectedTarget = targetWord;
@@ -1558,14 +1568,22 @@ const inFakeFrame = fakeFrames.some(f =>
 
 }
 else if(getIllusionRound() === 8){
-    // In Runde 8 ist nur der Fake Frame korrekt
-    if(inFakeFrame){
-        targetFound = true;       // Fake Frame = korrekt
-        // Optional: eigener Ton
-        // playFakeFrameTone(); 
+
+    const opticalFrame =
+      fakeFrames[illusion8OpticalFrameIndex];
+
+    const inOpticalFakeFrame = opticalFrame &&
+      group.every(([y,x]) =>
+        x === opticalFrame.x &&
+        y >= opticalFrame.y &&
+        y < opticalFrame.y + (opticalFrame.h || frameH)
+      );
+
+    if(inOpticalFakeFrame){
+        targetFound = true;
     }
-    // Original Frame ignorieren
-} else {
+} 
+else {
     if(inOriginalFrame){
         targetFound = true;
     }
@@ -2100,6 +2118,32 @@ function drawRoundSevenHintLetters() {
   ctx.restore();
 }
 
+/* ===== ILLUSION 8: OPTICAL FAKE WORD ===== */
+function drawRoundEightHintLetters() {
+
+  if (getIllusionRound() !== 8 || !targetWord) return;
+
+  const f = fakeFrames[illusion8OpticalFrameIndex];
+  if (!f) return;
+
+  const visibleLetters = targetWord.slice(1);
+
+  ctx.save();
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '1px monospace';
+
+  visibleLetters.split('').forEach((letter, index) => {
+    ctx.fillText(
+      letter,
+      f.x + 0.5,
+      f.y + index + 1.5
+    );
+  });
+
+  ctx.restore();
+}
 /* ===== DRAW ===== */
 function clearHighlights(){ highlights.forEach(r=>r.fill(null)); }
 
@@ -2216,8 +2260,8 @@ ctx.globalAlpha = 1;
   });
 
  // Runde 1: Optische Buchstaben im Originalrahmen und Fakerahmen 
-drawRoundOneHintLetters(); 
-drawRoundSevenHintLetters();
+drawRoundSevenHintLetters(); 
+drawRoundEightHintLetters();
 arena.forEach((row,y)=>{
   row.forEach((v,x)=>{
     if(v){ 
