@@ -477,6 +477,7 @@ function updateRoundDisplay() {
 let fakeFrames = [];
 // ===== WRONG POINTS =====
 let wrongCount = 0;
+let wrongLimitTriggered = false;
 // ===== ILLUSION 7: THE OPTICAL =====
 let illusion7OpticalFrameIndex = -1;
 let illusion7TrapTriggered = false;
@@ -1440,12 +1441,55 @@ function triggerOriginalFramePulse() {
       index < wrongCount ? 'transparent' : color;
   });
 } 
+  
+ function returnToIntroAfterWrongLimit() {
+
+  gameRunning = false;
+
+  round = 1;
+  wrongCount = 0;
+  updateWrongPoints();
+
+  arena.forEach(r => r.fill(null));
+  clearHighlights();
+
+  mindMessageShown = false;
+
+  if (window.previewAnim) {
+    cancelAnimationFrame(window.previewAnim);
+    window.previewAnim = null;
+  }
+
+  const intro = document.getElementById('introScreen');
+
+  intro.style.display = 'flex';
+  intro.style.opacity = '1';
+
+  setTimeout(() => {
+    intro.style.opacity = '0';
+
+    setTimeout(() => {
+      intro.style.display = 'none';
+      startFallingLettersPreview();
+    }, 800);
+
+  }, 5000);
+} 
   /* ===== GAME LOGIC ===== */
 function flashWrongAnswer() {
     
-  wrongCount++;
+wrongCount++;
 
-  updateWrongPoints();
+updateWrongPoints();
+
+if (wrongCount >= 4 && !wrongLimitTriggered) {
+  wrongLimitTriggered = true;
+  gameRunning = false;
+
+  setTimeout(() => {
+    returnToIntroAfterWrongLimit();
+  }, 850);
+}
   
   const body = document.body;
 
@@ -2367,6 +2411,9 @@ document.getElementById('introPreviewOverlay')?.remove();
   }
   // Startet das Spiel
   if(!gameRunning){
+    wrongLimitTriggered = false;
+    wrongCount = 0;
+    updateWrongPoints();
     shuffleIllusions();
     shuffleFrameColors();   // 👈 HIER EINFÜGEN
     colorIndex = 0;
