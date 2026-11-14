@@ -1446,9 +1446,20 @@ function triggerOriginalFramePulse() {
 
   gameRunning = false;
 
-  round = 0;
-  wrongCount = 0;
-  updateWrongPoints();
+round = 0;
+wrongCount = 0;
+wrongLimitTriggered = false;
+
+updateWrongPoints();
+updateRoundDisplay();
+
+const hintEl = document.getElementById('wordHint');
+hintEl.textContent = 'Hint';
+hintEl.style.visibility = 'visible';
+hintEl.style.color = '#ffffff';
+
+hintRevealed = false;
+hintDisabled = false;
 
   arena.forEach(r => r.fill(null));
   clearHighlights();
