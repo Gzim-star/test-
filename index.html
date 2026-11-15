@@ -1735,6 +1735,7 @@ if(targetFound){
   stopIllusion3HintCycle();
   stopIllusion10HintCycle();
   flashCorrectAnswer();
+  playNextRoundTone(); 
 }
 else if(targetWordFound || falseHintFound || fakeFrameHit){
   flashWrongAnswer();
@@ -1773,7 +1774,7 @@ else if(targetWordFound || falseHintFound || fakeFrameHit){
   resetIllusion6Fake();
   resetIllusion3Echo();  
   
-  playNextRoundTone(); // 👈 HIER
+  
   // Spielfeld leeren
   arena.forEach(r=>r.fill(null));
   clearHighlights();
