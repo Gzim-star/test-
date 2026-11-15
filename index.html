@@ -400,26 +400,29 @@ function playWrongSound() {
   const gain = audioCtx.createGain();
   const filter = audioCtx.createBiquadFilter();
 
-  // Elektrischer Impuls
-  osc.type = "square";
+  // Elektrisches Bzzz
+  osc.type = "sawtooth";
 
-  osc.frequency.setValueAtTime(900, now);
-  osc.frequency.exponentialRampToValueAtTime(280, now + 0.09);
+  osc.frequency.setValueAtTime(700, now);
+  osc.frequency.exponentialRampToValueAtTime(350, now + 0.10);
 
-  filter.type = "highpass";
-  filter.frequency.setValueAtTime(1100, now);
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(2200, now);
+  filter.frequency.exponentialRampToValueAtTime(700, now + 0.14);
 
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.035, now + 0.005);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.11);
+  gain.gain.exponentialRampToValueAtTime(0.035, now + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
 
   osc.connect(filter);
   filter.connect(gain);
   gain.connect(audioCtx.destination);
 
   osc.start(now);
-  osc.stop(now + 0.12);
+  osc.stop(now + 0.17);
 }
+
+
 
 /* ===== DICTIONARY ===== */
 const WORDS = [
