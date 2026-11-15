@@ -272,6 +272,30 @@ body.correct-answer-flash::after {
   100% { opacity: 0; }
 }
 
+/* ===== ROUND CHANGE: CONTROL ANIMATION ===== */
+
+@keyframes roundControlsAnimation {
+  0% {
+    opacity: 1;
+  }
+
+  35% {
+    opacity: 0;
+  }
+
+  65% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+.round-change-animation {
+  animation: roundControlsAnimation 500ms ease-in-out;
+}
+  
 </style>
 </head>
 
@@ -539,6 +563,31 @@ function updateRoundDisplay() {
   const display = document.getElementById('roundDisplay');
   if(display) display.textContent = round + '/' + maxRounds;
 }
+
+
+function animateRoundControls() {
+
+  const elements = [
+    ...gameElement.querySelectorAll('.controls button'),
+    document.getElementById('wordHint'),
+    document.getElementById('roundDisplay')
+  ];
+
+  elements.forEach(element => {
+
+    if (!element) return;
+
+    element.classList.remove('round-change-animation');
+
+    // Animation neu starten
+    void element.offsetWidth;
+
+    element.classList.add('round-change-animation');
+
+  });
+
+}
+  
 let fakeFrames = [];
 // ===== WRONG POINTS =====
 let wrongCount = 0;
@@ -1778,7 +1827,7 @@ else if(targetWordFound || falseHintFound || fakeFrameHit){
   // Runde zurück
   round = Math.max(1, round - 1);
   updateRoundDisplay();
-
+  animateRoundControls();
   // Spielfeld reset
   arena.forEach(r => r.fill(null));
   clearHighlights();
@@ -1828,7 +1877,7 @@ if(round > maxRounds){
 }
  
   updateRoundDisplay();
-
+  animateRoundControls();
 // Runde 5: THE VOID nach ca. 10 Sekunden planen
 if (getIllusionRound() === 5) {
   startRound5Void();
