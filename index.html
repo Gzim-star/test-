@@ -389,7 +389,6 @@ function playNextRoundTone() {
   osc.start(now);
   osc.stop(now + 0.22);
 }
-  
 
 function playWrongSound() {
   if (!audioCtx) return;
@@ -402,31 +401,26 @@ function playWrongSound() {
 
   osc.type = "triangle";
 
-  osc.frequency.setValueAtTime(780, now);
-  osc.frequency.setValueAtTime(520, now + 0.065);
-  osc.frequency.exponentialRampToValueAtTime(260, now + 0.19);
+  // Kurzer digitaler BZZT
+  osc.frequency.setValueAtTime(620, now);
+  osc.frequency.setValueAtTime(420, now + 0.025);
+  osc.frequency.setValueAtTime(620, now + 0.055);
+  osc.frequency.setValueAtTime(420, now + 0.085);
 
-  filter.type = "lowpass";
-  filter.frequency.setValueAtTime(2400, now);
-  filter.frequency.exponentialRampToValueAtTime(900, now + 0.20);
+  filter.type = "highpass";
+  filter.frequency.setValueAtTime(900, now);
 
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.045, now + 0.012);
-  gain.gain.setValueAtTime(0.025, now + 0.07);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.23);
+  gain.gain.exponentialRampToValueAtTime(0.04, now + 0.005);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
 
   osc.connect(filter);
   filter.connect(gain);
   gain.connect(audioCtx.destination);
 
   osc.start(now);
-  osc.stop(now + 0.24);
-}
-
-
-
-
-
+  osc.stop(now + 0.13);
+}  
 /* ===== DICTIONARY ===== */
 const WORDS = [
 // 10-Buchstaben-Wörter
@@ -1741,7 +1735,7 @@ if(targetFound){
   stopIllusion3HintCycle();
   stopIllusion10HintCycle();
   flashCorrectAnswer();
-  playNextRoundTone(); 
+  playNextRoundTone();
 }
 else if(targetWordFound || falseHintFound || fakeFrameHit){
   flashWrongAnswer();
