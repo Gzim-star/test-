@@ -390,6 +390,7 @@ function playNextRoundTone() {
   osc.stop(now + 0.22);
 }
   
+
 function playWrongSound() {
   if (!audioCtx) return;
 
@@ -399,28 +400,27 @@ function playWrongSound() {
   const gain = audioCtx.createGain();
   const filter = audioCtx.createBiquadFilter();
 
-  osc.type = "triangle";
+  // Elektrischer Impuls
+  osc.type = "square";
 
-  // Kurzer digitaler BZZT
-  osc.frequency.setValueAtTime(620, now);
-  osc.frequency.setValueAtTime(420, now + 0.025);
-  osc.frequency.setValueAtTime(620, now + 0.055);
-  osc.frequency.setValueAtTime(420, now + 0.085);
+  osc.frequency.setValueAtTime(900, now);
+  osc.frequency.exponentialRampToValueAtTime(280, now + 0.09);
 
   filter.type = "highpass";
-  filter.frequency.setValueAtTime(900, now);
+  filter.frequency.setValueAtTime(1100, now);
 
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.04, now + 0.005);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+  gain.gain.exponentialRampToValueAtTime(0.035, now + 0.005);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.11);
 
   osc.connect(filter);
   filter.connect(gain);
   gain.connect(audioCtx.destination);
 
   osc.start(now);
-  osc.stop(now + 0.13);
+  osc.stop(now + 0.12);
 }
+
 /* ===== DICTIONARY ===== */
 const WORDS = [
 // 10-Buchstaben-Wörter
