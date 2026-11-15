@@ -401,24 +401,25 @@ function playWrongSound() {
 
   osc.type = "triangle";
 
+  // Kurzer digitaler BZZT
   osc.frequency.setValueAtTime(620, now);
-  osc.frequency.setValueAtTime(420, now + 0.045);
-  osc.frequency.setValueAtTime(620, now + 0.085);
+  osc.frequency.setValueAtTime(420, now + 0.025);
+  osc.frequency.setValueAtTime(620, now + 0.055);
+  osc.frequency.setValueAtTime(420, now + 0.085);
 
   filter.type = "highpass";
-  filter.frequency.value = 900;
+  filter.frequency.setValueAtTime(900, now);
 
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.linearRampToValueAtTime(0.04, now + 0.005);
-  gain.gain.setValueAtTime(0.04, now + 0.09);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.13);
+  gain.gain.exponentialRampToValueAtTime(0.04, now + 0.005);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
 
   osc.connect(filter);
   filter.connect(gain);
   gain.connect(audioCtx.destination);
 
   osc.start(now);
-  osc.stop(now + 0.14);
+  osc.stop(now + 0.13);
 }
 /* ===== DICTIONARY ===== */
 const WORDS = [
