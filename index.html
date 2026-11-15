@@ -399,24 +399,24 @@ function playWrongSound() {
   const gain = audioCtx.createGain();
   const filter = audioCtx.createBiquadFilter();
 
-  osc.type = "square";
+  osc.type = "sawtooth";
 
-  osc.frequency.setValueAtTime(180, now);
-  osc.frequency.exponentialRampToValueAtTime(45, now + 0.16);
+  osc.frequency.setValueAtTime(1100, now);
+  osc.frequency.exponentialRampToValueAtTime(420, now + 0.16);
 
-  filter.type = "lowpass";
-  filter.frequency.setValueAtTime(1800, now);
+  filter.type = "highpass";
+  filter.frequency.setValueAtTime(750, now);
 
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.linearRampToValueAtTime(0.16, now + 0.008);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.19);
+  gain.gain.linearRampToValueAtTime(0.07, now + 0.005);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
 
   osc.connect(filter);
   filter.connect(gain);
   gain.connect(audioCtx.destination);
 
   osc.start(now);
-  osc.stop(now + 0.2);
+  osc.stop(now + 0.19);
 }
 /* ===== DICTIONARY ===== */
 const WORDS = [
