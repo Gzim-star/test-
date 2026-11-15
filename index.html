@@ -372,6 +372,16 @@ document.addEventListener('pointerdown', initAudio);
 function playNextRoundTone() {
   if (!audioCtx) return;
 
+  if (audioCtx.state !== "running") {
+    audioCtx.resume().then(() => {
+      if (audioCtx.state === "running") {
+        playNextRoundTone();
+      }
+    }).catch(error => console.log("Audio:", error));
+
+    return;
+  }
+
   const now = audioCtx.currentTime;
 
   const osc = audioCtx.createOscillator();
@@ -403,6 +413,16 @@ function playNextRoundTone() {
 
 function playWrongSound() {
   if (!audioCtx) return;
+
+  if (audioCtx.state !== "running") {
+    audioCtx.resume().then(() => {
+      if (audioCtx.state === "running") {
+        playWrongTone();
+      }
+    }).catch(error => console.log("Audio:", error));
+
+    return;
+  }
 
   const now = audioCtx.currentTime;
 
