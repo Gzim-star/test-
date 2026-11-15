@@ -394,39 +394,31 @@ function playWrongSound() {
   if (!audioCtx) return;
 
   const now = audioCtx.currentTime;
-  const duration = 0.16;
-  const buffer = audioCtx.createBuffer(
-    1,
-    audioCtx.sampleRate * duration,
-    audioCtx.sampleRate
-  );
 
-  const data = buffer.getChannelData(0);
-
-  for (let i = 0; i < data.length; i++) {
-    data[i] = (Math.random() * 2 - 1);
-  }
-
-  const noise = audioCtx.createBufferSource();
-  const filter = audioCtx.createBiquadFilter();
+  const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
+  const filter = audioCtx.createBiquadFilter();
 
-  noise.buffer = buffer;
+  osc.type = "triangle";
+
+  osc.frequency.setValueAtTime(620, now);
+  osc.frequency.setValueAtTime(420, now + 0.045);
+  osc.frequency.setValueAtTime(620, now + 0.085);
 
   filter.type = "highpass";
-  filter.frequency.value = 1800;
+  filter.frequency.value = 900;
 
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.linearRampToValueAtTime(0.13, now + 0.008);
-  gain.gain.setValueAtTime(0.08, now + 0.045);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+  gain.gain.linearRampToValueAtTime(0.04, now + 0.005);
+  gain.gain.setValueAtTime(0.04, now + 0.09);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.13);
 
-  noise.connect(filter);
+  osc.connect(filter);
   filter.connect(gain);
   gain.connect(audioCtx.destination);
 
-  noise.start(now);
-  noise.stop(now + duration);
+  osc.start(now);
+  osc.stop(now + 0.14);
 }
 /* ===== DICTIONARY ===== */
 const WORDS = [
