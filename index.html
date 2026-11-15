@@ -366,28 +366,27 @@ function playNextRoundTone() {
   const gain = audioCtx.createGain();
   const filter = audioCtx.createBiquadFilter();
 
-  // Clean digital sound
   osc.type = "triangle";
 
-  // Leichter futuristischer Aufstieg
-  osc.frequency.setValueAtTime(420, now);
-  osc.frequency.linearRampToValueAtTime(620, now + 0.18);
+  // Kurzer digitaler BZZT
+  osc.frequency.setValueAtTime(620, now);
+  osc.frequency.setValueAtTime(420, now + 0.025);
+  osc.frequency.setValueAtTime(620, now + 0.055);
+  osc.frequency.setValueAtTime(420, now + 0.085);
 
-  // Subtiler Highpass für digitalen Charakter
   filter.type = "highpass";
   filter.frequency.setValueAtTime(900, now);
 
-  // Sehr leise und kurz
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.04, now + 0.05);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+  gain.gain.exponentialRampToValueAtTime(0.04, now + 0.005);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
 
   osc.connect(filter);
   filter.connect(gain);
   gain.connect(audioCtx.destination);
 
   osc.start(now);
-  osc.stop(now + 0.22);
+  osc.stop(now + 0.13);
 }
 
 function playWrongSound() {
