@@ -272,28 +272,6 @@ body.correct-answer-flash::after {
   100% { opacity: 0; }
 }
 
-/* ===== ROUND CHANGE: CONTROL ANIMATION ===== */
-
-
-@keyframes roundControlsAnimation {
-  0% {
-    opacity: 1;
-  }
-
-  40% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
-  }
-}
-
-.round-change-animation {
-  animation: roundControlsAnimation 400ms ease-in-out both;
-}
-
-  
 </style>
 </head>
 
@@ -561,26 +539,6 @@ function updateRoundDisplay() {
   const display = document.getElementById('roundDisplay');
   if(display) display.textContent = round + '/' + maxRounds;
 }
-
-
-function animateRoundControls() {
-  const elements = [
-    ...document.querySelectorAll('.controls button'),
-    document.getElementById('roundDisplay')
-  ];
-
-  elements.forEach(el => {
-    if (!el || el.closest('.void-hidden')) return;
-
-    el.classList.remove('round-change-animation');
-
-    void el.offsetWidth;
-
-    el.classList.add('round-change-animation');
-  });
-}
-
-  
 let fakeFrames = [];
 // ===== WRONG POINTS =====
 let wrongCount = 0;
@@ -1820,7 +1778,7 @@ else if(targetWordFound || falseHintFound || fakeFrameHit){
   // Runde zurück
   round = Math.max(1, round - 1);
   updateRoundDisplay();
-  animateRoundControls();
+
   // Spielfeld reset
   arena.forEach(r => r.fill(null));
   clearHighlights();
@@ -1870,7 +1828,7 @@ if(round > maxRounds){
 }
  
   updateRoundDisplay();
-  animateRoundControls();
+
 // Runde 5: THE VOID nach ca. 10 Sekunden planen
 if (getIllusionRound() === 5) {
   startRound5Void();
