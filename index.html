@@ -278,15 +278,9 @@ body.correct-answer-flash::after {
   0% {
     opacity: 1;
   }
-
-  35% {
+  40% {
     opacity: 0;
   }
-
-  65% {
-    opacity: 0;
-  }
-
   100% {
     opacity: 1;
   }
@@ -566,6 +560,8 @@ function updateRoundDisplay() {
 
 function animateRoundControls() {
 
+  if (gameElement.classList.contains('void-hidden')) return;
+
   const elements = [
     ...gameElement.querySelectorAll('.controls button'),
     document.getElementById('roundDisplay')
@@ -582,7 +578,6 @@ function animateRoundControls() {
     element.classList.add('round-change-animation');
 
   });
-
 }
   
 let fakeFrames = [];
