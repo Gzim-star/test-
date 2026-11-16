@@ -1070,10 +1070,9 @@ if (getIllusionRound() === 3) {
   illusion7OpticalFrameIndex = -1;
   illusion7TrapTriggered = false;
   
-if (getIllusionRound() === 7 && fakeFrames.length > 0) {
-  illusion7OpticalFrameIndex =
-    Math.floor(Math.random() * fakeFrames.length);
-} 
+ if (getIllusionRound() === 7 && fakeFrames.length > 0) {
+  illusion7OpticalFrameIndex = 0;
+}
 
 // ILLUSION 8: Einen Fake-Rahmen für das optische Wort auswählen
 illusion8OpticalFrameIndex = -1;
@@ -1082,6 +1081,7 @@ if (getIllusionRound() === 8 && fakeFrames.length > 0) {
   illusion8OpticalFrameIndex =
     Math.floor(Math.random() * fakeFrames.length);
 }
+
 
 if (getIllusionRound() === 10) {
   const expectedRound = round;
@@ -1095,15 +1095,23 @@ if (getIllusionRound() === 10) {
       getIllusionRound() !== 10
     ) return;
 
-    const heights = [4, 6, 8, 10];
+    const sizes = [4, 6, 8, 10];
 
-    frameH = heights[Math.floor(Math.random() * heights.length)];
+    frameH = sizes[Math.floor(Math.random() * sizes.length)];
 
     fakeFrames.forEach(f => {
-      f.h = heights[Math.floor(Math.random() * heights.length)];
+      const size = sizes[Math.floor(Math.random() * sizes.length)];
+
+      if (f.orientation === 'horizontal') {
+        f.w = size;
+        f.h = 1;
+      } else {
+        f.h = size;
+      }
     });
   }, 6000);
 }
+
   
   activateColorLie();
   // Alten Timer stoppen
@@ -2373,13 +2381,23 @@ function drawRoundEightHintLetters() {
   ctx.textBaseline = 'middle';
   ctx.font = '1px monospace';
 
-  visibleLetters.split('').forEach((letter, index) => {
+
+visibleLetters.split('').forEach((letter, index) => {
+  if (f.orientation === 'horizontal') {
+    ctx.fillText(
+      letter,
+      f.x + index + 1.5,
+      f.y + 0.5
+    );
+  } else {
     ctx.fillText(
       letter,
       f.x + 0.5,
       f.y + index + 1.5
     );
-  });
+  }
+});
+
 
   ctx.restore();
 }
