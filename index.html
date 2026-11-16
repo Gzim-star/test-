@@ -274,21 +274,25 @@ body.correct-answer-flash::after {
 
 /* ===== ROUND CHANGE: CONTROL ANIMATION ===== */
 
+
 @keyframes roundControlsAnimation {
   0% {
     opacity: 1;
   }
+
   40% {
     opacity: 0;
   }
+
   100% {
     opacity: 1;
   }
 }
 
 .round-change-animation {
-  animation: roundControlsAnimation 500ms ease-in-out;
+  animation: roundControlsAnimation 700ms ease-in-out both;
 }
+
   
 </style>
 </head>
@@ -558,27 +562,24 @@ function updateRoundDisplay() {
   if(display) display.textContent = round + '/' + maxRounds;
 }
 
+
 function animateRoundControls() {
-
-  if (gameElement.classList.contains('void-hidden')) return;
-
   const elements = [
-    ...gameElement.querySelectorAll('.controls button'),
+    ...document.querySelectorAll('.controls button'),
     document.getElementById('roundDisplay')
   ];
 
-  elements.forEach(element => {
+  elements.forEach(el => {
+    if (!el || el.closest('.void-hidden')) return;
 
-    if (!element) return;
+    el.classList.remove('round-change-animation');
 
-    element.classList.remove('round-change-animation');
+    void el.offsetWidth;
 
-    void element.offsetWidth;
-
-    element.classList.add('round-change-animation');
-
+    el.classList.add('round-change-animation);
   });
 }
+
   
 let fakeFrames = [];
 // ===== WRONG POINTS =====
