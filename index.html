@@ -564,12 +564,10 @@ function updateRoundDisplay() {
   if(display) display.textContent = round + '/' + maxRounds;
 }
 
-
 function animateRoundControls() {
 
   const elements = [
     ...gameElement.querySelectorAll('.controls button'),
-    document.getElementById('wordHint'),
     document.getElementById('roundDisplay')
   ];
 
@@ -579,7 +577,6 @@ function animateRoundControls() {
 
     element.classList.remove('round-change-animation');
 
-    // Animation neu starten
     void element.offsetWidth;
 
     element.classList.add('round-change-animation');
