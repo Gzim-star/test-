@@ -2510,18 +2510,20 @@ ctx.lineWidth = borderWidth;
 const fakeFrameH = f.h || frameH;
 const fakeFrameSize = getFakeFrameSize(f);
 
+const fakeFrameSize = getFakeFrameSize(f);
+
 ctx.fillRect(
   f.x + 0.05,
   f.y - 0.27,
-  0.9,
-  frameH - 0.2
+  fakeFrameSize.w - 0.2,
+  fakeFrameSize.h - 0.2
 );
 
 ctx.strokeRect(
   f.x + 0.05,
   f.y - 0.27,
-  0.9,
-  frameH - 0.2
+  fakeFrameSize.w - 0.2,
+  fakeFrameSize.h - 0.2
 );
 
 
