@@ -472,11 +472,65 @@ const COLORS = ['#ffffff'];
 let wordQueue = [];
 let wordIndex = 0;
 
-function shuffleWords() {
-  wordQueue = [...WORDS].sort(() => Math.random() - 0.5);
-  wordIndex = 0;
+let lastDistributionIndex = -1;
+
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
 }
 
+let runWordLengths = [];
+let runWordPools = {};
+
+function shuffleWords() {
+  const distributions = [
+    [3, 2, 3, 2],
+    [2, 3, 2, 3],
+    [3, 2, 2, 3],
+    [2, 3, 3, 2],
+    [2, 2, 3, 3],
+    [3, 3, 2, 2]
+  ];
+
+  const choices = distributions
+    .map((_, i) => i)
+    .filter(i => i !== lastDistributionIndex);
+
+  const selectedIndex =
+    choices[Math.floor(Math.random() * choices.length)];
+
+  lastDistributionIndex = selectedIndex;
+
+  const counts = distributions[selectedIndex];
+  const lengths = [10, 8, 6, 4];
+
+  let plannedLengths = [];
+
+  lengths.forEach((length, i) => {
+    for (let n = 0; n < counts[i]; n++) {
+      plannedLengths.push(length);
+    }
+  });
+
+  const illusion10Round = illusionOrder.indexOf(10);
+
+  plannedLengths.splice(plannedLengths.indexOf(10), 1);
+  shuffleArray(plannedLengths);
+
+  runWordLengths = [...plannedLengths];
+  runWordLengths.splice(illusion10Round, 0, 10);
+
+  runWordPools = {};
+
+  lengths.forEach(length => {
+    runWordPools[length] = shuffleArray(
+      WORDS.filter(word => word.length === length)
+    );
+  });
+}
 /* ===== ARENA ===== */
 const arena = Array.from({ length: 20 }, () => Array(10).fill(null));
 const highlights = Array.from({ length: 20 }, () => Array(10).fill(null));
@@ -1012,21 +1066,10 @@ function newTargetWord() {
   clearTimeout(illusion10ResizeTimer);
   illusion10ResizeTimer = null;
   
-if (getIllusionRound() === 10) {
+const plannedLength = runWordLengths[round - 1];
+const pool = runWordPools[plannedLength];
 
-  const tenLetterWords = WORDS.filter(word => word.length === 10);
-
-  targetWord = tenLetterWords[
-    Math.floor(Math.random() * tenLetterWords.length)
-  ];
-
-} else {
-
-  if (wordQueue.length === 0 || wordIndex >= wordQueue.length) shuffleWords();
-
-  targetWord = wordQueue[wordIndex++];
-
-}
+targetWord = pool.pop();
 
   // 🔹 Rahmenhöhe automatisch an Wortlänge anpassen
   frameH = targetWord.length < 10 ? targetWord.length : 10;
@@ -1825,6 +1868,7 @@ resetRound5Void();
 if(round > maxRounds){
   round = 1;
   shuffleIllusions();
+  shuffleWords();
 }
  
   updateRoundDisplay();
@@ -2492,6 +2536,7 @@ document.getElementById('introPreviewOverlay')?.remove();
     wrongCount = 0;
     updateWrongPoints();
     shuffleIllusions();
+    shuffleWords();
     shuffleFrameColors();   // 👈 HIER EINFÜGEN
     colorIndex = 0;
 
@@ -2533,6 +2578,7 @@ function restartGame() {
   arena.forEach(r => r.fill(null));
   clearHighlights();
   shuffleIllusions();
+  shuffleWords();
   shuffleFrameColors();
   colorIndex = 0;
 
