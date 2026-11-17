@@ -515,21 +515,25 @@ function shuffleWords() {
     }
   });
 
-  const illusion10Round = illusionOrder.indexOf(10);
+const illusion10Round = illusionOrder.indexOf(10);
 
-  plannedLengths.splice(plannedLengths.indexOf(10), 1);
+plannedLengths.splice(plannedLengths.indexOf(10), 1);
+
+let validPlan = false;
+
+while (!validPlan) {
   shuffleArray(plannedLengths);
 
-  runWordLengths = [...plannedLengths];
-  runWordLengths.splice(illusion10Round, 0, 10);
+  const testPlan = [...plannedLengths];
+  testPlan.splice(illusion10Round, 0, 10);
 
-  runWordPools = {};
+  validPlan = testPlan.every((length, i) =>
+    i === 0 || length !== testPlan[i - 1]
+  );
 
-  lengths.forEach(length => {
-    runWordPools[length] = shuffleArray(
-      WORDS.filter(word => word.length === length)
-    );
-  });
+  if (validPlan) {
+    runWordLengths = testPlan;
+  }
 }
 /* ===== ARENA ===== */
 const arena = Array.from({ length: 20 }, () => Array(10).fill(null));
