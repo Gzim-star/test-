@@ -1135,7 +1135,13 @@ if (getIllusionRound() === 4) {
 } else {
   illusion4LetterColor = null;
 }
-  
+
+if (getIllusionRound() === 4 && illusion4LetterColor) {
+  illusion4PlayerColor =
+    Math.random() < 0.5 ? '#ffffff' : illusion4LetterColor;
+} else {
+  illusion4PlayerColor = '#ffffff';
+}
 const hintEl = document.getElementById('wordHint');
 hintEl.style.color = '#ffffff';
 
@@ -1629,6 +1635,7 @@ hintRevealed = false;
 hintDisabled = false;
 
   arena.forEach(r => r.fill(null));
+  illusion4LetterColors.forEach(row => row.fill(null));
   clearHighlights();
 
   mindMessageShown = false;
@@ -1905,6 +1912,7 @@ else if(targetWordFound || falseHintFound || fakeFrameHit){
 
   // Spielfeld reset
   arena.forEach(r => r.fill(null));
+  illusion4LetterColors.forEach(row => row.fill(null));
   clearHighlights();
 
   // Spieler reset
@@ -1932,6 +1940,7 @@ else if(targetWordFound || falseHintFound || fakeFrameHit){
   
   // Spielfeld leeren
   arena.forEach(r=>r.fill(null));
+  illusion4LetterColors.forEach(row => row.fill(null));
   clearHighlights();
   resetPlayer();
 
@@ -2689,6 +2698,7 @@ function restartGame() {
   if (fakePulseTimeout) clearTimeout(fakePulseTimeout);
 
   arena.forEach(r => r.fill(null));
+  illusion4LetterColors.forEach(row => row.fill(null));
   clearHighlights();
   shuffleIllusions();
   shuffleWords();
