@@ -2166,9 +2166,10 @@ function resetPlayer(){
 
   player.pos.y = 0;
   player.pos.x = Math.floor(arena[0].length/2);
-  if(collide(arena,player)) arena.forEach(r=>r.fill(null));
+if(collide(arena,player)) {
+  arena.forEach(r=>r.fill(null));
+  illusion4LetterColors.forEach(row => row.fill(null));
 }
-
 /* ===== FALLING LETTERS PREVIEW ===== */
 function startFallingLettersPreview() {
   startFallingIntroText();
