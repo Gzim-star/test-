@@ -469,6 +469,11 @@ const WORDS = [
 ];
 const MIN_LEN = 4;
 const COLORS = ['#ffffff'];
+// ===== ILLUSION 4 – COLORED LETTER TRAP =====
+let illusion4LetterColor = null;
+let illusion4PlayerColor = '#ffffff';
+let illusion4LetterColors = [];
+
 let wordQueue = [];
 let wordIndex = 0;
 
@@ -574,6 +579,8 @@ function shuffleWords() {
 
 /* ===== ARENA ===== */
 const arena = Array.from({ length: 20 }, () => Array(10).fill(null));
+illusion4LetterColors = Array.from({ length: 20 }, () => Array(10).fill(null));
+
 const highlights = Array.from({ length: 20 }, () => Array(10).fill(null));
 
 const player = { pos: { x: 0, y: 0 }, letter: '' };
@@ -1117,6 +1124,17 @@ targetWord = pool.pop();
 
 // Hint in Runde 4 deaktivieren
 hintDisabled = (getIllusionRound() === 4);
+// ILLUSION 4 – Eine zufällige Fallenfarbe auswählen
+if (getIllusionRound() === 4) {
+  const availableColors = colorLiePalette.filter(
+    color => color !== '#ffffff'
+  );
+
+  illusion4LetterColor =
+    availableColors[Math.floor(Math.random() * availableColors.length)];
+} else {
+  illusion4LetterColor = null;
+}
   
 const hintEl = document.getElementById('wordHint');
 hintEl.style.color = '#ffffff';
@@ -1678,7 +1696,11 @@ function collide(arena, player) {
 }
 
 function merge(arena, player) { 
-  arena[player.pos.y][player.pos.x] = player.letter; 
+  arena[player.pos.y][player.pos.x] = player.letter;
+
+  // ILLUSION 4 – Buchstabenfarbe speichern
+  illusion4LetterColors[player.pos.y][player.pos.x] =
+    getIllusionRound() === 4 ? illusion4PlayerColor : null;
 
   // Runde 4 Trick
   if(getIllusionRound() === 4){
@@ -1761,7 +1783,8 @@ let fakeFrameHit =
   illusion7TrapTriggered || detectIllusion7FirstLetter();
 
 const found = findWords();
-
+let illusion4ColoredWordFound = false;
+  
 if (!found.length && !fakeFrameHit) return;
   
   let targetFound = false;
@@ -1772,7 +1795,18 @@ if (!found.length && !fakeFrameHit) return;
   found.forEach(group=>{
     const letters = group.map(([y,x])=>arena[y][x]).join('');
     const upperLetters = letters.toUpperCase();
+// ILLUSION 4 – Gefundenes Wort mit Fallenfarbe?
+if (getIllusionRound() === 4) {
+  const containsColoredLetter = group.some(([y, x]) => {
+    const color = illusion4LetterColors[y][x];
+    return color && color !== '#ffffff';
+  });
 
+  if (containsColoredLetter) {
+    illusion4ColoredWordFound = true;
+  }
+}
+    
 if (
   getIllusionRound() === 3 &&
   illusion3FakeHints.includes(upperLetters)
@@ -1846,7 +1880,13 @@ else {
     group.forEach(([y,x])=>highlights[y][x]=color);
   });
 
-if(targetFound){
+if (illusion4ColoredWordFound) {
+  targetFound = false;
+}  
+if(illusion4ColoredWordFound){
+  flashWrongAnswer();
+}
+else if(targetFound){
   stopIllusion3HintCycle();
   stopIllusion10HintCycle();
   flashCorrectAnswer();
@@ -2031,8 +2071,11 @@ fakePulseTriggered = false;
   
   return;
 }
-    found.flat().forEach(([y,x])=>arena[y][x]=null);
-    applyGravity();
+found.flat().forEach(([y,x])=>{
+  arena[y][x] = null;
+  illusion4LetterColors[y][x] = null;
+});
+applyGravity();
     clearHighlights();
   },300);
 }
@@ -2088,7 +2131,19 @@ function applyGravity(){
     for(let y=arena.length-1;y>=0;y--){
       if(arena[y][x]===null){
         for(let k=y-1;k>=0;k--){
-          if(arena[k][x]!==null){ arena[y][x]=arena[k][x]; arena[k][x]=null; break; }
+          if(arena[k][x]!==null){
+
+            arena[y][x] = arena[k][x];
+            arena[k][x] = null;
+
+            // ILLUSION 4 – Farbe mitbewegen
+            illusion4LetterColors[y][x] =
+              illusion4LetterColors[k][x];
+
+            illusion4LetterColors[k][x] = null;
+
+            break;
+          }
         }
       }
     }
@@ -2100,6 +2155,15 @@ function randomLetter(){ return String.fromCharCode(65+Math.floor(Math.random()*
 
 function resetPlayer(){
   player.letter = randomLetter();
+
+  // ILLUSION 4 – Weiß oder Fallenfarbe
+  if (getIllusionRound() === 4 && illusion4LetterColor) {
+    illusion4PlayerColor =
+      Math.random() < 0.5 ? '#ffffff' : illusion4LetterColor;
+  } else {
+    illusion4PlayerColor = '#ffffff';
+  }
+
   player.pos.y = 0;
   player.pos.x = Math.floor(arena[0].length/2);
   if(collide(arena,player)) arena.forEach(r=>r.fill(null));
@@ -2526,15 +2590,22 @@ arena.forEach((row,y)=>{
         return;
       }
 
-      ctx.fillStyle = highlights[y][x]||COLORS[(x+y)%COLORS.length]; 
+  ctx.fillStyle =
+  highlights[y][x] ||
+  (getIllusionRound() === 4
+    ? illusion4LetterColors[y][x] || '#ffffff'
+    : COLORS[(x+y)%COLORS.length]); 
       ctx.fillText(v,x+0.5,y+0.5); 
     }
   });
 });
 
-  ctx.fillStyle=COLORS[(player.pos.x+player.pos.y)%COLORS.length];
+  ctx.fillStyle =
+  getIllusionRound() === 4
+    ? illusion4PlayerColor
+    : COLORS[(player.pos.x+player.pos.y)%COLORS.length];
   ctx.fillText(player.letter,player.pos.x+0.5,player.pos.y+0.5);
-}
+ }
 }
 /* ===== LOOP ===== */
 let lastTime=0, dropCounter=0, dropInterval=700;
