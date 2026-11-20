@@ -294,7 +294,7 @@ body.correct-answer-flash::after {
   <div class="hint">
   <span id="wordHint" onclick="revealHint()" style="cursor:pointer;">Hint</span>
 </div>
-  <canvas id="wordFallCanvas" width="300" height="600"></canvas>
+  <canvas id="wordFallCanvas" width="360" height="600"></canvas>
 <div id="mindMessage"></div>
  <div id="fakeTimer">00:00:10</div>
    <div id="roundDisplay" style="
@@ -578,10 +578,10 @@ function shuffleWords() {
 }
 
 /* ===== ARENA ===== */
-const arena = Array.from({ length: 20 }, () => Array(10).fill(null));
-illusion4LetterColors = Array.from({ length: 20 }, () => Array(10).fill(null));
+const arena = Array.from({ length: 20 }, () => Array(12).fill(null));
+illusion4LetterColors = Array.from({ length: 20 }, () => Array(12).fill(null));
 
-const highlights = Array.from({ length: 20 }, () => Array(10).fill(null));
+const highlights = Array.from({ length: 20 }, () => Array(12).fill(null));
 
 const player = { pos: { x: 0, y: 0 }, letter: '' };
 let targetWord = '';
