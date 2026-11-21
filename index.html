@@ -751,6 +751,7 @@ const player = { pos: { x: 0, y: 0 }, letter: '' };
 let targetWord = '';
 let gameRunning = false;
 let gamePaused = false;
+let gameHasStarted = false;
 let pauseStartedAt = 0;
 let hintRevealed = false;
 let revealTimeout = null;
@@ -3073,7 +3074,8 @@ function startGame() {
 
   gamePaused = false;
   gameRunning = true;
-
+  gameHasStarted = true;
+  
   resetPlayer();
   newTargetWord();
   updateRoundDisplay();
@@ -3083,7 +3085,11 @@ function startGame() {
 
 
 function restartGame() {
-   document.body.classList.remove('game-paused');
+   
+  if (!gameHasStarted) return;
+   
+     document.body.classList.remove('game-paused');
+  
   if (gamePaused) {
     gamePaused = false;
     resumeManagedTimers();
