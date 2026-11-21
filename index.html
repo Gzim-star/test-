@@ -162,7 +162,17 @@ canvas {
   transform: scale(0.94);
 }
 
+/* ===== START / PAUSE SYMBOL ===== */
+.controls button .start-pause-icon {
+  color: #ff3030;
+  text-shadow: 0 0 5px red, 0 0 10px rgba(255,0,0,0.5);
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
 
+.controls button .start-pause-icon.running {
+  color: #00ff66;
+  text-shadow: 0 0 5px #00ff66, 0 0 10px rgba(0,255,102,0.5);
+}
 
 
  #mindMessage{
@@ -301,6 +311,10 @@ body.correct-answer-flash::after {
   100% { opacity: 0; }
 }
 
+body.game-paused::after {
+  animation-play-state: paused !important;
+}
+  
 </style>
 </head>
 
@@ -338,7 +352,9 @@ body.correct-answer-flash::after {
 </div> 
   
   <div class="controls">
-    <button onclick="startGame()">⏻</button>
+    <button id="startPauseButton" onclick="startGame()">
+  <span id="startPauseIcon" class="start-pause-icon">⏻</span>
+</button>
     <button onclick="moveControl(-1)">◀━━</button>
     <button onclick="dropFast()">▽</button>
     <button onclick="moveControl(1)">━━▶</button>
@@ -348,6 +364,125 @@ body.correct-answer-flash::after {
 
 <script>
 
+  // ===== GLOBAL PAUSE TIMER SYSTEM =====
+
+const nativeSetTimeout = window.setTimeout.bind(window);
+const nativeClearTimeout = window.clearTimeout.bind(window);
+
+let managedTimers = new Map();
+let managedTimerId = 1;
+let timerSystemPaused = false;
+
+function armManagedTimer(record, delay) {
+  record.remaining = delay;
+  record.startedAt = Date.now();
+
+  record.nativeId = nativeSetTimeout(() => {
+
+    record.nativeId = null;
+
+    if (!managedTimers.has(record.id)) return;
+
+    if (!record.interval) {
+      managedTimers.delete(record.id);
+      record.callback(...record.args);
+      return;
+    }
+
+    record.callback(...record.args);
+
+    if (!managedTimers.has(record.id)) return;
+
+    if (timerSystemPaused) {
+      record.remaining = record.delay;
+      return;
+    }
+
+    armManagedTimer(record, record.delay);
+
+  }, delay);
+}
+
+function createManagedTimer(callback, delay, interval, args) {
+  const id = managedTimerId++;
+
+  const record = {
+    id,
+    callback,
+    delay: Math.max(0, Number(delay) || 0),
+    remaining: Math.max(0, Number(delay) || 0),
+    interval,
+    args,
+    nativeId: null,
+    startedAt: 0
+  };
+
+  managedTimers.set(id, record);
+
+  if (!timerSystemPaused) {
+    armManagedTimer(record, record.delay);
+  }
+
+  return id;
+}
+
+window.setTimeout = function(callback, delay, ...args) {
+  return createManagedTimer(callback, delay, false, args);
+};
+
+window.setInterval = function(callback, delay, ...args) {
+  return createManagedTimer(callback, delay, true, args);
+};
+
+function clearManagedTimer(id) {
+  const record = managedTimers.get(id);
+
+  if (!record) return;
+
+  if (record.nativeId !== null) {
+    nativeClearTimeout(record.nativeId);
+  }
+
+  managedTimers.delete(id);
+}
+
+window.clearTimeout = clearManagedTimer;
+window.clearInterval = clearManagedTimer;
+
+function pauseManagedTimers() {
+
+  if (timerSystemPaused) return;
+
+  timerSystemPaused = true;
+
+  const now = Date.now();
+
+  managedTimers.forEach(record => {
+
+    if (record.nativeId !== null) {
+      nativeClearTimeout(record.nativeId);
+
+      record.remaining = Math.max(
+        0,
+        record.remaining - (now - record.startedAt)
+      );
+
+      record.nativeId = null;
+    }
+
+  });
+}
+
+function resumeManagedTimers() {
+
+  if (!timerSystemPaused) return;
+
+  timerSystemPaused = false;
+
+  managedTimers.forEach(record => {
+    armManagedTimer(record, record.remaining);
+  });
+}
   /*
 
     Word Fall: Illusion
@@ -615,6 +750,8 @@ const highlights = Array.from({ length: 20 }, () => Array(12).fill(null));
 const player = { pos: { x: 0, y: 0 }, letter: '' };
 let targetWord = '';
 let gameRunning = false;
+let gamePaused = false;
+let pauseStartedAt = 0;
 let hintRevealed = false;
 let revealTimeout = null;
 let hintHideTimeout = null;
@@ -1644,10 +1781,13 @@ function triggerOriginalFramePulse() {
   });
 } 
   
- function returnToIntroAfterWrongLimit() {
+function returnToIntroAfterWrongLimit() {
 
-  gameRunning = false;
+gameRunning = false;
 
+gamePaused = false;
+updateStartPauseButton();
+   
 round = 0;
 wrongCount = 0;
 wrongLimitTriggered = false;
@@ -1700,6 +1840,9 @@ if (wrongCount >= 4 && !wrongLimitTriggered) {
   wrongLimitTriggered = true;
   gameRunning = false;
 
+  gamePaused = false;
+  updateStartPauseButton();
+  
   setTimeout(() => {
     returnToIntroAfterWrongLimit();
   }, 850);
@@ -1820,7 +1963,16 @@ function merge(arena, player) {
     }
   }
 }
-function move(dir) { player.pos.x += dir; if(collide(arena, player)) player.pos.x -= dir; }
+function move(dir) {
+
+  if (!gameRunning) return;
+
+  player.pos.x += dir;
+
+  if (collide(arena, player)) {
+    player.pos.x -= dir;
+  }
+}
 function drop() {
 
   if (!gameRunning || illusion7TrapTriggered) return;
@@ -2650,7 +2802,7 @@ function draw(){
   ctx.textAlign='center'; 
   ctx.textBaseline='middle';
 
-if(gameRunning){
+if(gameRunning || gamePaused){
 
 // 🟩 ORIGINAL FRAME MIT SAFE PULSE
 
@@ -2659,7 +2811,7 @@ let alpha = 1;
 
 if(pulseActive){
 
-  pulseTime += 16;
+ if (gameRunning) pulseTime += 16;
   let progress = pulseTime / pulseDuration;
 
   if(progress >= 1){
@@ -2715,7 +2867,7 @@ if(
     let alpha = 1;
 
     if(fakePulseActive){
-      fakePulseTime += 16;
+     if (gameRunning) fakePulseTime += 16;
       let progress = fakePulseTime / pulseDuration;
 
       if(progress >= 1){
@@ -2814,43 +2966,109 @@ document.addEventListener('keydown',e=>{
   if(e.key==='ArrowDown') drop();
 });
 
+/* ===== BUTTONS ====
 /* ===== BUTTONS ===== */
-function startGame() {
-  if (window.introTextAnim) {
-  cancelAnimationFrame(window.introTextAnim);
-  window.introTextAnim = null;
+
+function updateStartPauseButton() {
+
+  const icon = document.getElementById('startPauseIcon');
+
+  if (!icon) return;
+
+  icon.classList.toggle('running', gameRunning);
 }
 
-document.getElementById('introPreviewOverlay')?.remove();
-  // Stoppt die Falling Letters Preview, falls noch aktiv
-  initAudio(); // 👈 HIER
-  
-  if(window.previewAnim){
+function pauseGame() {
+
+  if (!gameRunning || gamePaused) return;
+
+  gamePaused = true;
+  gameRunning = false;
+
+  pauseStartedAt = Date.now();
+
+  pauseManagedTimers();
+
+  updateStartPauseButton();
+}
+
+function resumeGame() {
+
+  if (!gamePaused) return;
+
+  const pauseDuration = Date.now() - pauseStartedAt;
+
+  // THE ECHO: Blink-Zeit einfrieren
+  if (illusion3EchoBlinkIndex !== -1 &&
+      illusion3EchoBlinkStart > 0) {
+
+    illusion3EchoBlinkStart += pauseDuration;
+  }
+
+  gamePaused = false;
+  gameRunning = true;
+
+  resumeManagedTimers();
+
+  updateStartPauseButton();
+}
+
+function startGame() {
+
+  initAudio();
+
+  // Laufendes Spiel pausieren
+  if (gameRunning) {
+    pauseGame();
+    return;
+  }
+
+  // Pausiertes Spiel fortsetzen
+  if (gamePaused) {
+    resumeGame();
+    return;
+  }
+
+  if (window.introTextAnim) {
+    cancelAnimationFrame(window.introTextAnim);
+    window.introTextAnim = null;
+  }
+
+  document.getElementById('introPreviewOverlay')?.remove();
+
+  if (window.previewAnim) {
     cancelAnimationFrame(window.previewAnim);
     window.previewAnim = null;
   }
-  // Startet das Spiel
-  if(!gameRunning){
-    wrongLimitTriggered = false;
-    wrongCount = 0;
-    updateWrongPoints();
-    shuffleIllusions();
-    shuffleWords();
-    shuffleFrameColors();   // 👈 HIER EINFÜGEN
-    colorIndex = 0;
 
-    round = 1;
-    
-    gameRunning = true;
-    resetPlayer();
-    //round = 10;  fur test ( game )
-    newTargetWord();
-    updateRoundDisplay(); // ← Anzeige direkt updaten
-  }
+  wrongLimitTriggered = false;
+  wrongCount = 0;
+
+  updateWrongPoints();
+
+  shuffleIllusions();
+  shuffleWords();
+  shuffleFrameColors();
+
+  colorIndex = 0;
+  round = 1;
+
+  gamePaused = false;
+  gameRunning = true;
+
+  resetPlayer();
+  newTargetWord();
+  updateRoundDisplay();
+
+  updateStartPauseButton();
 }
 
 
 function restartGame() {
+    if (gamePaused) {
+    gamePaused = false;
+    resumeManagedTimers();
+  }
   initAudio();
   
   wrongCount = 0;
@@ -2888,7 +3106,9 @@ function restartGame() {
 
   dropCounter = 0;
   gameRunning = true;
-
+  gamePaused = false;
+  updateStartPauseButton();
+  
   frameColor = originalFrameColors[round - 1];
   updateRoundDisplay();
 }
