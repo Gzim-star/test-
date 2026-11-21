@@ -2983,6 +2983,7 @@ function pauseGame() {
   if (!gameRunning || gamePaused) return;
 
   gamePaused = true;
+  document.body.classList.add('game-paused');
   gameRunning = false;
 
   pauseStartedAt = Date.now();
@@ -3006,6 +3007,7 @@ function resumeGame() {
   }
 
   gamePaused = false;
+  document.body.classList.remove('game-paused');
   gameRunning = true;
 
   resumeManagedTimers();
@@ -3065,7 +3067,8 @@ function startGame() {
 
 
 function restartGame() {
-    if (gamePaused) {
+   document.body.classList.remove('game-paused');
+  if (gamePaused) {
     gamePaused = false;
     resumeManagedTimers();
   }
