@@ -1699,29 +1699,54 @@ function flashCorrectAnswer() {
 }
 
 
+
 function collide(arena, player) {
   const { x, y } = player.pos;
 
-  // Spielfeldgrenzen
   if (
     y >= arena.length ||
     x < 0 ||
     x >= arena[0].length
   ) return true;
 
-  // Bereits belegtes Feld
   if (arena[y][x] !== null) return true;
 
-  // Boden des Originalrahmens:
-  // Nur die erste Zelle direkt unter dem Rahmen blockieren
+  // Rahmenboden nur dann, wenn der Spieler
+  // zuvor tatsächlich in diesen Rahmen gefallen ist
+  if (
+    player.frameFloor &&
+    player.frameFloor.x === x &&
+    player.frameFloor.y === y
+  ) return true;
+
+  return false;
+}
+
+
+function updateFrameFloorContact() {
+
+  const x = player.pos.x;
+  const y = player.pos.y;
+
+  player.frameFloor = null;
+
+  // Originalrahmen
   if (
     !framesInvisible &&
     x === frameX &&
-    y === frameY + frameH
-  ) return true;
+    y >= frameY &&
+    y < frameY + frameH
+  ) {
+    player.frameFloor = {
+      x: frameX,
+      y: frameY + frameH
+    };
+    return;
+  }
 
-  // Böden der Fake-Rahmen
-  const fakeFloorHit = fakeFrames.some((f, index) => {
+  // Fake-Rahmen
+  fakeFrames.forEach((f, index) => {
+
     const visible =
       !framesInvisible ||
       (
@@ -1734,14 +1759,18 @@ function collide(arena, player) {
 
     const h = f.h || frameH;
 
-    return (
+    if (
       visible &&
       x === f.x &&
-      y === f.y + h
-    );
+      y >= f.y &&
+      y < f.y + h
+    ) {
+      player.frameFloor = {
+        x: f.x,
+        y: f.y + h
+      };
+    }
   });
-
-  return fakeFloorHit;
 }
 
 
@@ -1767,6 +1796,7 @@ function drop() {
 
   if (!gameRunning || illusion7TrapTriggered) return;
 
+  updateFrameFloorContact();
   player.pos.y++;
 
   // ILLUSION 7: SENSOR WÄHREND DES FALLENS
@@ -2270,7 +2300,7 @@ function randomLetter(){ return String.fromCharCode(65+Math.floor(Math.random()*
 
 function resetPlayer(){
   player.letter = randomLetter();
-
+  player.frameFloor = null;
   // ILLUSION 4 – Weiß oder Fallenfarbe
   if (getIllusionRound() === 4 && illusion4LetterColor) {
     illusion4PlayerColor =
@@ -2840,6 +2870,7 @@ function dropFast() {
 
   while (!collide(arena, player)) {
 
+    updateFrameFloorContact();
     player.pos.y++;
 
     // SENSOR BEI JEDEM FALLSCHRITT
