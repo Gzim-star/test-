@@ -2515,7 +2515,13 @@ if(!framesInvisible){
 
   // Hintergrund
   ctx.fillStyle = '#000000';
-  ctx.fillRect(frameX+0.05, frameY-0.27, 0.9, frameH-0.2);
+  ctx.strokeRect(frameX+0.05, frameY-0.27, 0.9, frameH-0.2);
+
+  // Boden des Originalrahmens
+  ctx.beginPath();
+  ctx.moveTo(frameX+0.05, frameY+frameH-0.47);
+  ctx.lineTo(frameX+0.95, frameY+frameH-0.47);
+  ctx.stroke();
 
   // Rahmen
   ctx.globalAlpha = alpha;
@@ -2585,7 +2591,11 @@ const fakeFrameH = f.h || frameH;
 
 ctx.fillRect(f.x+0.05, f.y-0.27, 0.9, fakeFrameH-0.2);
 ctx.strokeRect(f.x+0.05, f.y-0.27, 0.9, fakeFrameH-0.2);
-
+// Boden des Fake-Rahmens
+ctx.beginPath();
+ctx.moveTo(f.x+0.05, f.y+fakeFrameH-0.47);
+ctx.lineTo(f.x+0.95, f.y+fakeFrameH-0.47);
+ctx.stroke();
 
 ctx.globalAlpha = 1;
   });
