@@ -1698,6 +1698,7 @@ function flashCorrectAnswer() {
   body.classList.add('correct-answer-flash');
 }
 
+
 function collide(arena, player) {
   const { x, y } = player.pos;
 
@@ -1711,16 +1712,16 @@ function collide(arena, player) {
   // Bereits belegtes Feld
   if (arena[y][x] !== null) return true;
 
-  // Boden des Originalrahmens
+  // Boden des Originalrahmens:
+  // Nur die erste Zelle direkt unter dem Rahmen blockieren
   if (
     !framesInvisible &&
     x === frameX &&
-    y >= frameY + frameH
+    y === frameY + frameH
   ) return true;
 
   // Böden der Fake-Rahmen
   const fakeFloorHit = fakeFrames.some((f, index) => {
-
     const visible =
       !framesInvisible ||
       (
@@ -1736,12 +1737,13 @@ function collide(arena, player) {
     return (
       visible &&
       x === f.x &&
-      y >= f.y + h
+      y === f.y + h
     );
   });
 
   return fakeFloorHit;
 }
+
 
 
 function merge(arena, player) { 
@@ -2177,17 +2179,58 @@ function clearDiagonalSixByColor(){
 }
 
 /* ===== GRAVITY ===== */
-function applyGravity(){
-  for(let x=0;x<arena[0].length;x++){
-    for(let y=arena.length-1;y>=0;y--){
-      if(arena[y][x]===null){
-        for(let k=y-1;k>=0;k--){
-          if(arena[k][x]!==null){
+
+function applyGravity() {
+
+  function isFrameFloorAt(x, y) {
+
+    // Originalrahmen
+    if (
+      !framesInvisible &&
+      x === frameX &&
+      y === frameY + frameH
+    ) return true;
+
+    // Fake-Rahmen
+    return fakeFrames.some((f, index) => {
+
+      const visible =
+        !framesInvisible ||
+        (
+          getIllusionRound() === 6 &&
+          (
+            (illusion6FakeVisible && index === illusion6FakeIndex) ||
+            (illusion6BlinkVisible && index === illusion6BlinkIndex)
+          )
+        );
+
+      const h = f.h || frameH;
+
+      return (
+        visible &&
+        x === f.x &&
+        y === f.y + h
+      );
+    });
+  }
+
+  for (let x = 0; x < arena[0].length; x++) {
+
+    for (let y = arena.length - 1; y >= 0; y--) {
+
+      // Rahmenboden darf nicht mit Buchstaben gefüllt werden
+      if (isFrameFloorAt(x, y)) continue;
+
+      if (arena[y][x] === null) {
+
+        for (let k = y - 1; k >= 0; k--) {
+
+          if (arena[k][x] !== null) {
 
             arena[y][x] = arena[k][x];
             arena[k][x] = null;
 
-            // ILLUSION 4 – Farbe mitbewegen
+            // Farbe ebenfalls mitbewegen
             illusion4LetterColors[y][x] =
               illusion4LetterColors[k][x];
 
@@ -2200,6 +2243,7 @@ function applyGravity(){
     }
   }
 }
+
 
 /* ===== PLAYER ===== */
 function randomLetter(){ return String.fromCharCode(65+Math.floor(Math.random()*26)); }
