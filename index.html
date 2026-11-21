@@ -2184,14 +2184,12 @@ function applyGravity() {
 
   function isFrameFloorAt(x, y) {
 
-    // Originalrahmen
     if (
       !framesInvisible &&
       x === frameX &&
       y === frameY + frameH
     ) return true;
 
-    // Fake-Rahmen
     return fakeFrames.some((f, index) => {
 
       const visible =
@@ -2216,33 +2214,55 @@ function applyGravity() {
 
   for (let x = 0; x < arena[0].length; x++) {
 
-    for (let y = arena.length - 1; y >= 0; y--) {
+    let segmentStart = 0;
 
-      // Rahmenboden darf nicht mit Buchstaben gefüllt werden
-      if (isFrameFloorAt(x, y)) continue;
+    function compactSegment(start, end) {
 
-      if (arena[y][x] === null) {
+      let writeY = end;
 
-        for (let k = y - 1; k >= 0; k--) {
+      for (let readY = end; readY >= start; readY--) {
 
-          if (arena[k][x] !== null) {
+        if (arena[readY][x] !== null) {
 
-            arena[y][x] = arena[k][x];
-            arena[k][x] = null;
+          if (writeY !== readY) {
 
-            // Farbe ebenfalls mitbewegen
-            illusion4LetterColors[y][x] =
-              illusion4LetterColors[k][x];
+            arena[writeY][x] = arena[readY][x];
+            arena[readY][x] = null;
 
-            illusion4LetterColors[k][x] = null;
+            illusion4LetterColors[writeY][x] =
+              illusion4LetterColors[readY][x];
 
-            break;
+            illusion4LetterColors[readY][x] = null;
           }
+
+          writeY--;
         }
       }
+
+      for (let y = writeY; y >= start; y--) {
+        arena[y][x] = null;
+        illusion4LetterColors[y][x] = null;
+      }
     }
+
+    for (let y = 0; y < arena.length; y++) {
+
+      if (isFrameFloorAt(x, y)) {
+
+        // Nur bis zum Rahmenboden Schwerkraft anwenden
+        compactSegment(segmentStart, y - 1);
+
+        // Hinter dem Boden beginnt ein neuer Bereich
+        segmentStart = y + 1;
+      }
+    }
+
+    // Letzten Bereich bearbeiten
+    compactSegment(segmentStart, arena.length - 1);
   }
 }
+
+
 
 
 /* ===== PLAYER ===== */
