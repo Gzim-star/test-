@@ -1697,10 +1697,52 @@ function flashCorrectAnswer() {
 
   body.classList.add('correct-answer-flash');
 }
+
 function collide(arena, player) {
   const { x, y } = player.pos;
-  return y >= arena.length || x < 0 || x >= arena[0].length || arena[y][x] !== null;
+
+  // Spielfeldgrenzen
+  if (
+    y >= arena.length ||
+    x < 0 ||
+    x >= arena[0].length
+  ) return true;
+
+  // Bereits belegtes Feld
+  if (arena[y][x] !== null) return true;
+
+  // Boden des Originalrahmens
+  if (
+    !framesInvisible &&
+    x === frameX &&
+    y >= frameY + frameH
+  ) return true;
+
+  // Böden der Fake-Rahmen
+  const fakeFloorHit = fakeFrames.some((f, index) => {
+
+    const visible =
+      !framesInvisible ||
+      (
+        getIllusionRound() === 6 &&
+        (
+          (illusion6FakeVisible && index === illusion6FakeIndex) ||
+          (illusion6BlinkVisible && index === illusion6BlinkIndex)
+        )
+      );
+
+    const h = f.h || frameH;
+
+    return (
+      visible &&
+      x === f.x &&
+      y >= f.y + h
+    );
+  });
+
+  return fakeFloorHit;
 }
+
 
 function merge(arena, player) { 
   arena[player.pos.y][player.pos.x] = player.letter;
