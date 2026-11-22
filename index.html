@@ -799,15 +799,7 @@ function shuffleIllusions() {
     [illusionOrder[j], illusionOrder[0]];
 
   }
-   // 🎭 Farben für Illusion 7 und 8 pro Durchlauf neu auslosen
-  illusion7OpticalColor =
-    Math.random() < 0.5 ? '#00ff00' : '#ff0000';
 
-  illusion8OpticalColor =
-    illusion7OpticalColor === '#00ff00'
-      ? '#ff0000'
-      : '#00ff00'; 
-  
   illusionOrder.unshift(1);
 }
 
@@ -829,7 +821,7 @@ let illusion7TrapTriggered = false;
 // ILLUSION 8: OPTICAL FAKE FRAME
 let illusion8OpticalFrameIndex = -1;
 let illusion7OpticalColor = '#00ff00';
-let illusion8OpticalColor = '#00ff00';
+let illusion8OpticalColor = '#ff0000';
 // 
 let pulseActive = false;
 let fakePulseTriggered = false;
@@ -897,14 +889,17 @@ function startIllusion3Echo() {
     illusion3EchoBlinkIndex = index;
     illusion3EchoBlinkStart = Date.now();
 
-    const endTimer = setTimeout(() => {
-      if (
-        round === expectedRound &&
-        illusion3EchoBlinkIndex === index
-      ) {
-        illusion3EchoBlinkIndex = -1;
-      }
-    }, 600);
+const endTimer = setTimeout(() => {
+  if (round === expectedRound && illusion3EchoBlinkIndex === index) {
+    illusion3EchoBlinkIndex = -1;
+
+    // 🎭 Nach dem zweiten Fake-Blink pulsiert der Originalrahmen
+    if (index === indexes[1]) {
+      pulseActive = true;
+      pulseTime = 0;
+    }
+  }
+}, 600);
 
     illusion3EchoTimers.push(endTimer);
   }
@@ -2297,6 +2292,15 @@ resetRound5Void();
     
 if(round > maxRounds){
   round = 1;
+  
+  // 🎭 Farben nach jedem vollständigen Durchlauf tauschen
+
+  const oldColor = illusion7OpticalColor;
+
+  illusion7OpticalColor = illusion8OpticalColor;
+
+  illusion8OpticalColor = oldColor;
+  
   shuffleIllusions();
   shuffleWords();
 }
@@ -2908,7 +2912,10 @@ if(pulseActive){
 
 // THE ECHO: Originalrahmen während Fake-Blink ruhig halten
 // 🎭 Illusion 3: Originalrahmen bleibt immer ruhig
-if (getIllusionRound() === 3) {
+if (
+  getIllusionRound() === 3 &&
+  illusion3EchoBlinkIndex !== -1
+) {
   borderWidth = 0.05;
   alpha = 1;
 }
