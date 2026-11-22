@@ -746,6 +746,7 @@ const arena = Array.from({ length: 20 }, () => Array(12).fill(null));
 illusion4LetterColors = Array.from({ length: 20 }, () => Array(12).fill(null));
 
 const highlights = Array.from({ length: 20 }, () => Array(12).fill(null));
+let landingEffects = [];
 
 const player = { pos: { x: 0, y: 0 }, letter: '' };
 let targetWord = '';
@@ -1946,11 +1947,49 @@ function updateFrameFloorContact() {
   });
 }
 
+// ===== LIQUID LANDING EFFECT =====
+function createLandingEffect(x, y) {
+  landingEffects.push({
+    x: x + 0.5,
+    y: y + 0.7,
+    start: performance.now()
+  });
 
+  if (landingEffects.length > 12) {
+    landingEffects.shift();
+  }
+}
+
+function drawLandingEffects() {
+  const now = performance.now();
+
+  landingEffects = landingEffects.filter(effect =>
+    now - effect.start < 260
+  );
+
+  landingEffects.forEach(effect => {
+    const progress = (now - effect.start) / 260;
+    const spread = progress * 0.48;
+
+    ctx.save();
+    ctx.globalAlpha = (1 - progress) * 0.65;
+    ctx.strokeStyle = '#b9faff';
+    ctx.lineWidth = 0.035;
+    ctx.lineCap = 'round';
+
+    // Flüssigkeit breitet sich seitlich aus
+    ctx.beginPath();
+    ctx.moveTo(effect.x - spread, effect.y);
+    ctx.lineTo(effect.x + spread, effect.y);
+    ctx.stroke();
+
+    ctx.restore();
+  });
+}
 
 function merge(arena, player) { 
   arena[player.pos.y][player.pos.x] = player.letter;
-
+   createLandingEffect(player.pos.x, player.pos.y);
   // ILLUSION 4 – Buchstabenfarbe speichern
   illusion4LetterColors[player.pos.y][player.pos.x] =
     getIllusionRound() === 4 ? illusion4PlayerColor : null;
@@ -2961,6 +3000,7 @@ arena.forEach((row,y)=>{
     ? illusion4PlayerColor
     : COLORS[(player.pos.x+player.pos.y)%COLORS.length];
   ctx.fillText(player.letter,player.pos.x+0.5,player.pos.y+0.5);
+ drawLandingEffects();
  }
 }
 /* ===== LOOP ===== */
