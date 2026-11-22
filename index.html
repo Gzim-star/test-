@@ -2865,23 +2865,19 @@ if(gameRunning || gamePaused){
 let borderWidth = 0.05;
 let alpha = 1;
 
-if(
-  pulseActive &&
-  !(
-    getIllusionRound() === 3 &&
-    illusion3EchoBlinkIndex === 1
-  )
-){
+if(pulseActive){
+  if (gameRunning) pulseTime += 16;
 
- if (gameRunning) pulseTime += 16;
   let progress = pulseTime / pulseDuration;
 
   if(progress >= 1){
     pulseActive = false;
-  } else {
-    // Pulse Effekt
-    borderWidth = 0.05 + Math.sin(progress * Math.PI) * 0.08;  // leichter
-    alpha = 1 + Math.sin(progress * Math.PI) * 0.5;           // weniger hell
+  } else if (
+    !(getIllusionRound() === 3 &&
+      illusion3EchoBlinkIndex !== -1)
+  ) {
+    borderWidth = 0.05 + Math.sin(progress * Math.PI) * 0.08;
+    alpha = 1 + Math.sin(progress * Math.PI) * 0.5;
   }
 }
 
