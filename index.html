@@ -2899,6 +2899,15 @@ if(pulseActive){
   }
 }
 
+// THE ECHO: Originalrahmen während Fake-Blink ruhig halten
+if (
+  getIllusionRound() === 3 &&
+  illusion3EchoBlinkIndex !== -1
+) {
+  borderWidth = 0.05;
+  alpha = 1;
+}
+
 // Hintergrund nur wenn sichtbar
 // Farbe zuerst definieren
 let currentColor = frameColor || '#00ff00';
