@@ -852,8 +852,15 @@ function resetIllusion3Echo() {
   illusion3EchoBlinkStart = 0;
 }
 
-function startIllusion3Echo() {
 
+function resetIllusion3Echo() {
+  illusion3EchoTimers.forEach(timer => clearTimeout(timer));
+  illusion3EchoTimers = [];
+  illusion3EchoBlinkIndex = -1;
+  illusion3EchoBlinkStart = 0;
+}
+
+function startIllusion3Echo() {
   if (getIllusionRound() !== 3 || !gameRunning) return;
 
   resetIllusion3Echo();
@@ -864,7 +871,11 @@ function startIllusion3Echo() {
 
   const indexes = fakeFrames.map((f, i) => i);
 
-  indexes.sort(() => Math.random() - 0.5);
+  // Zufällige Reihenfolge der Fake-Rahmen
+  for (let i = indexes.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indexes[i], indexes[j]] = [indexes[j], indexes[i]];
+  }
 
   function blinkFake(index) {
     if (
@@ -873,24 +884,35 @@ function startIllusion3Echo() {
       getIllusionRound() !== 3
     ) return;
 
+    // Nur den Original-Pulse während des Fake-Blinks beenden.
+    // Der normale Pulse beim Rundenwechsel bleibt unangetastet.
+    pulseActive = false;
+    pulseTime = 0;
+
     illusion3EchoBlinkIndex = index;
     illusion3EchoBlinkStart = Date.now();
 
-    setTimeout(() => {
-      if (illusion3EchoBlinkIndex === index) {
+    const endTimer = setTimeout(() => {
+      if (
+        round === expectedRound &&
+        illusion3EchoBlinkIndex === index
+      ) {
         illusion3EchoBlinkIndex = -1;
       }
     }, 600);
+
+    illusion3EchoTimers.push(endTimer);
   }
 
-  illusion3EchoTimers.push(setTimeout(() => {
-    blinkFake(indexes[0]);
-  }, 2000));
+  illusion3EchoTimers.push(
+    setTimeout(() => blinkFake(indexes[0]), 2000)
+  );
 
-  illusion3EchoTimers.push(setTimeout(() => {
-    blinkFake(indexes[1]);
-  }, 4000));
+  illusion3EchoTimers.push(
+    setTimeout(() => blinkFake(indexes[1]), 4000)
+  );
 }
+
 
 function resetIllusion6Fake() {
   clearTimeout(illusion6HideTimer);
