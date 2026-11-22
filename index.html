@@ -539,7 +539,7 @@ function playNextRoundTone() {
   if (audioCtx.state !== "running") {
     audioCtx.resume().then(() => {
       if (audioCtx.state === "running") {
-        playNextRoundTone();
+        playNextRoundSound();
       }
     }).catch(error => console.log("Audio:", error));
 
@@ -581,7 +581,7 @@ function playWrongSound() {
   if (audioCtx.state !== "running") {
     audioCtx.resume().then(() => {
       if (audioCtx.state === "running") {
-        playWrongTone();
+        playWrongSound();
       }
     }).catch(error => console.log("Audio:", error));
 
@@ -799,9 +799,19 @@ function shuffleIllusions() {
     [illusionOrder[j], illusionOrder[0]];
 
   }
+   // 🎭 Farben für Illusion 7 und 8 pro Durchlauf neu auslosen
+  illusion7OpticalColor =
+    Math.random() < 0.5 ? '#00ff00' : '#ff0000';
+
+  illusion8OpticalColor =
+    illusion7OpticalColor === '#00ff00'
+      ? '#ff0000'
+      : '#00ff00'; 
+  
   illusionOrder.unshift(1);
 }
 
+   
 function getIllusionRound() {
   return illusionOrder[round - 1] || round;
 }
@@ -1304,14 +1314,7 @@ const pool = runWordPools[plannedLength];
 
 targetWord = pool.pop();
 
-  // 🎭 Zufällige Farben für Illusion 7 und 8
-illusion7OpticalColor =
-  Math.random() < 0.5 ? '#00ff00' : '#ff0000';
 
-illusion8OpticalColor =
-  illusion7OpticalColor === '#00ff00'
-    ? '#ff0000'
-    : '#00ff00';
   
   // 🔹 Rahmenhöhe automatisch an Wortlänge anpassen
   frameH = targetWord.length < 10 ? targetWord.length : 10;
@@ -2904,10 +2907,8 @@ if(pulseActive){
 }
 
 // THE ECHO: Originalrahmen während Fake-Blink ruhig halten
-if (
-  getIllusionRound() === 3 &&
-  illusion3EchoBlinkIndex !== -1
-) {
+// 🎭 Illusion 3: Originalrahmen bleibt immer ruhig
+if (getIllusionRound() === 3) {
   borderWidth = 0.05;
   alpha = 1;
 }
