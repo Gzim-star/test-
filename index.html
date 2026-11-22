@@ -539,7 +539,7 @@ function playNextRoundTone() {
   if (audioCtx.state !== "running") {
     audioCtx.resume().then(() => {
       if (audioCtx.state === "running") {
-        playNextRoundSound();
+        playNextRoundTone();
       }
     }).catch(error => console.log("Audio:", error));
 
