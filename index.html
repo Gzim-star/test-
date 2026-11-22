@@ -855,14 +855,6 @@ function resetIllusion3Echo() {
   illusion3EchoBlinkStart = 0;
 }
 
-
-function resetIllusion3Echo() {
-  illusion3EchoTimers.forEach(timer => clearTimeout(timer));
-  illusion3EchoTimers = [];
-  illusion3EchoBlinkIndex = -1;
-  illusion3EchoBlinkStart = 0;
-}
-
 function startIllusion3Echo() {
   if (getIllusionRound() !== 3 || !gameRunning) return;
 
