@@ -822,9 +822,6 @@ let illusion7TrapTriggered = false;
 let illusion8OpticalFrameIndex = -1;
 let illusion7OpticalColor = '#00ff00';
 let illusion8OpticalColor = '#ff0000';
-let illusion7HintLetterPending = false;
-let illusion8HintLetterPending = false;
-let playerOpticalColor = null;
 // 
 let pulseActive = false;
 let fakePulseTriggered = false;
@@ -2258,12 +2255,7 @@ else if(targetWordFound || falseHintFound || fakeFrameHit){
 
   // Neues Wort starten (macht auch neue Frames)
   newTargetWord();
-  
-  illusion7HintLetterPending = getIllusionRound() === 7;
-  illusion8HintLetterPending = getIllusionRound() === 8;
 
-  resetPlayer();
-  
   return;
 }
   if(targetFound){
@@ -2295,18 +2287,13 @@ resetRound5Void();
 if(round > maxRounds){
   round = 1;
   
-// 🎭 Neue Farbverteilung pro Durchlauf
-const previousColor = illusion7OpticalColor;
+  // 🎭 Farben nach jedem vollständigen Durchlauf tauschen
 
-illusion7OpticalColor =
-  previousColor === '#00ff00'
-    ? '#ff0000'
-    : '#00ff00';
+  const oldColor = illusion7OpticalColor;
 
-illusion8OpticalColor =
-  illusion7OpticalColor === '#00ff00'
-    ? '#ff0000'
-    : '#00ff00';
+  illusion7OpticalColor = illusion8OpticalColor;
+
+  illusion8OpticalColor = oldColor;
   
   shuffleIllusions();
   shuffleWords();
@@ -2578,8 +2565,6 @@ function randomLetter(){ return String.fromCharCode(65+Math.floor(Math.random()*
 function resetPlayer(){
   player.letter = randomLetter();
   player.frameFloor = null;
-  playerOpticalColor = null;
-
   // ILLUSION 4 – Weiß oder Fallenfarbe
   if (getIllusionRound() === 4 && illusion4LetterColor) {
     illusion4PlayerColor =
@@ -2588,27 +2573,13 @@ function resetPlayer(){
     illusion4PlayerColor = '#ffffff';
   }
 
-  // ILLUSION 7 – ERSTER HINT-BUCHSTABE
-  if (illusion7HintLetterPending) {
-    player.letter = targetWord[0];
-    playerOpticalColor = illusion7OpticalColor;
-    illusion7HintLetterPending = false;
-  }
-
-  // ILLUSION 8 – ERSTER HINT-BUCHSTABE
-  else if (illusion8HintLetterPending) {
-    player.letter = targetWord[0];
-    playerOpticalColor = illusion8OpticalColor;
-    illusion8HintLetterPending = false;
-  }
-
   player.pos.y = 0;
   player.pos.x = Math.floor(arena[0].length/2);
+if(collide(arena,player)) {
+  arena.forEach(r=>r.fill(null));
+  illusion4LetterColors.forEach(row => row.fill(null));
+ }
 
-  if(collide(arena,player)) {
-    arena.forEach(r=>r.fill(null));
-    illusion4LetterColors.forEach(row => row.fill(null));
-  }
 }
 /* ===== FALLING LETTERS PREVIEW ===== */
 function startFallingLettersPreview() {
@@ -3054,7 +3025,6 @@ arena.forEach((row,y)=>{
 
   ctx.fillStyle =
   highlights[y][x] ||
-  playerOpticalColor ||
   (getIllusionRound() === 4
     ? illusion4LetterColors[y][x] || '#ffffff'
     : COLORS[(x+y)%COLORS.length]); 
@@ -3184,12 +3154,8 @@ function startGame() {
   gameRunning = true;
   gameHasStarted = true;
   
-  newTargetWord();
-
-  illusion7HintLetterPending = getIllusionRound() === 7;
-  illusion8HintLetterPending = getIllusionRound() === 8;
-
   resetPlayer();
+  newTargetWord();
   updateRoundDisplay();
 
   updateStartPauseButton();
@@ -3239,10 +3205,6 @@ function restartGame() {
 
   newTargetWord();
   generateFakeFrames();
-
-  illusion7HintLetterPending = getIllusionRound() === 7;
-  illusion8HintLetterPending = getIllusionRound() === 8;
-
   resetPlayer();
 
   dropCounter = 0;
