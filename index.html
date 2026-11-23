@@ -3053,6 +3053,7 @@ if(
       }
     }
   // ILLUSION 3 – THE ECHO BLINK
+// ILLUSION 3 – THE ECHO BLINK
 
 if (
   getIllusionRound() === 3 &&
@@ -3061,20 +3062,17 @@ if (
 ) {
 
   const progress = Math.min(
-    (Date.now() - illusion3EchoBlinkStart) / pulseDuration,
+    (Date.now() - illusion3EchoBlinkStart) / 600,
     1
   );
 
-  if (progress >= 1) {
-    illusion3EchoBlinkIndex = -1;
-  } else {
-    const pulse = Math.sin(progress * Math.PI);
+  const pulse = Math.sin(progress * Math.PI);
 
-    // EXAKT wie beim Originalrahmen
-    borderWidth = 0.05 + pulse * 0.08;
-    alpha = 1 + pulse * 0.5;
-  }
+  // EXAKT wie beim Originalrahmen
+  borderWidth = 0.05 + pulse * 0.08;
+  alpha = 1 + pulse * 0.5;
 }
+
 
 ctx.fillStyle = '#000000';
 ctx.globalAlpha = alpha;
