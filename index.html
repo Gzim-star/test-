@@ -2287,13 +2287,18 @@ resetRound5Void();
 if(round > maxRounds){
   round = 1;
   
-  // 🎭 Farben nach jedem vollständigen Durchlauf tauschen
+// 🎭 Neue Farbverteilung pro Durchlauf
+const previousColor = illusion7OpticalColor;
 
-  const oldColor = illusion7OpticalColor;
+illusion7OpticalColor =
+  previousColor === '#00ff00'
+    ? '#ff0000'
+    : '#00ff00';
 
-  illusion7OpticalColor = illusion8OpticalColor;
-
-  illusion8OpticalColor = oldColor;
+illusion8OpticalColor =
+  illusion7OpticalColor === '#00ff00'
+    ? '#ff0000'
+    : '#00ff00';
   
   shuffleIllusions();
   shuffleWords();
