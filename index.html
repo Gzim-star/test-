@@ -889,17 +889,11 @@ function startIllusion3Echo() {
     illusion3EchoBlinkIndex = index;
     illusion3EchoBlinkStart = Date.now();
 
-const endTimer = setTimeout(() => {
-  if (round === expectedRound && illusion3EchoBlinkIndex === index) {
+  const endTimer = setTimeout(() => {
+   if (round === expectedRound && illusion3EchoBlinkIndex === index) {
     illusion3EchoBlinkIndex = -1;
-
-    // 🎭 Nach dem zweiten Fake-Blink pulsiert der Originalrahmen
-    if (index === indexes[1]) {
-      pulseActive = true;
-      pulseTime = 0;
-    }
   }
-}, 600);
+}, 600);{
 
     illusion3EchoTimers.push(endTimer);
   }
