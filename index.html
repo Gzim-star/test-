@@ -807,6 +807,34 @@ function shuffleIllusions() {
 function getIllusionRound() {
   return illusionOrder[round - 1] || round;
 }
+// ===== OPTICAL HINT LETTER =====
+function activateOpticalHintLetter() {
+
+  if (!targetWord) return;
+
+  // ILLUSION 7
+  if (
+    getIllusionRound() === 7 &&
+    !illusion7HintLetterUsed
+  ) {
+    player.letter = targetWord[0];
+    player.color = illusion7OpticalColor;
+
+    illusion7HintLetterUsed = true;
+  }
+
+  // ILLUSION 8
+  else if (
+    getIllusionRound() === 8 &&
+    !illusion8HintLetterUsed
+  ) {
+    player.letter = targetWord[0];
+    player.color = illusion8OpticalColor;
+
+    illusion8HintLetterUsed = true;
+  }
+}
+
 function updateRoundDisplay() {
   const display = document.getElementById('roundDisplay');
   if(display) display.textContent = round + '/' + maxRounds;
@@ -822,6 +850,9 @@ let illusion7TrapTriggered = false;
 let illusion8OpticalFrameIndex = -1;
 let illusion7OpticalColor = '#00ff00';
 let illusion8OpticalColor = '#ff0000';
+// ===== ILLUSION 7 & 8: FIRST HINT LETTER ONCE =====
+let illusion7HintLetterUsed = false;
+let illusion8HintLetterUsed = false;
 // 
 let pulseActive = false;
 let fakePulseTriggered = false;
@@ -2286,7 +2317,9 @@ resetRound5Void();
     
 if(round > maxRounds){
   round = 1;
-  
+
+  illusion7HintLetterUsed = false;
+  illusion8HintLetterUsed = false;
   // 🎭 Farben nach jedem vollständigen Durchlauf tauschen
 
   const oldColor = illusion7OpticalColor;
@@ -2321,7 +2354,8 @@ if(getIllusionRound() > 1){
 }
   // Neues Wort erzeugt auch neuen Original Frame
   newTargetWord();
- // ILLUSION 3 – THE ECHO
+  activateOpticalHintLetter();
+  // ILLUSION 3 – THE ECHO
   startIllusion3Echo();
   // ===== ILLUSION 6 – ONE FAKE FRAME RETURNS =====
 if (getIllusionRound() === 6) {
@@ -2563,8 +2597,11 @@ function applyGravity() {
 function randomLetter(){ return String.fromCharCode(65+Math.floor(Math.random()*26)); }
 
 function resetPlayer(){
+
   player.letter = randomLetter();
+  player.color = null;
   player.frameFloor = null;
+
   // ILLUSION 4 – Weiß oder Fallenfarbe
   if (getIllusionRound() === 4 && illusion4LetterColor) {
     illusion4PlayerColor =
@@ -2575,11 +2612,11 @@ function resetPlayer(){
 
   player.pos.y = 0;
   player.pos.x = Math.floor(arena[0].length/2);
-if(collide(arena,player)) {
-  arena.forEach(r=>r.fill(null));
-  illusion4LetterColors.forEach(row => row.fill(null));
- }
 
+  if(collide(arena,player)) {
+    arena.forEach(r=>r.fill(null));
+    illusion4LetterColors.forEach(row => row.fill(null));
+  }
 }
 /* ===== FALLING LETTERS PREVIEW ===== */
 function startFallingLettersPreview() {
@@ -3034,7 +3071,8 @@ arena.forEach((row,y)=>{
 });
 
   ctx.fillStyle =
-  getIllusionRound() === 4
+   player.color ||
+    getIllusionRound() === 4
     ? illusion4PlayerColor
     : COLORS[(player.pos.x+player.pos.y)%COLORS.length];
   ctx.fillText(player.letter,player.pos.x+0.5,player.pos.y+0.5);
@@ -3149,13 +3187,17 @@ function startGame() {
 
   colorIndex = 0;
   round = 1;
-
+  
+  illusion7HintLetterUsed = false;
+  illusion8HintLetterUsed = false;
+  
   gamePaused = false;
   gameRunning = true;
   gameHasStarted = true;
   
   resetPlayer();
   newTargetWord();
+  activateOpticalHintLetter();
   updateRoundDisplay();
 
   updateStartPauseButton();
@@ -3180,6 +3222,10 @@ function restartGame() {
   resetRound5Void();
 
   round = 1;
+  
+  illusion7HintLetterUsed = false;
+  illusion8HintLetterUsed = false;
+  
   frameColor = originalFrameColors[0];
   mindMessageShown = false;
   framesInvisible = false;
@@ -3206,7 +3252,8 @@ function restartGame() {
   newTargetWord();
   generateFakeFrames();
   resetPlayer();
-
+  activateOpticalHintLetter();
+  
   dropCounter = 0;
   gameRunning = true;
   gamePaused = false;
