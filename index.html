@@ -3072,11 +3072,17 @@ arena.forEach((row,y)=>{
 
   ctx.fillStyle =
    player.color ||
-    getIllusionRound() === 4
+   (getIllusionRound() === 4
     ? illusion4PlayerColor
     : COLORS[(player.pos.x+player.pos.y)%COLORS.length];
-  ctx.fillText(player.letter,player.pos.x+0.5,player.pos.y+0.5);
- drawLandingEffects();
+  
+  ctx.fillText(
+    player.letter,
+    player.pos.x + 0.5,
+    player.pos.y + 0.5
+   };
+  
+  drawLandingEffects();
  }
 }
 /* ===== LOOP ===== */
