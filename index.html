@@ -3070,11 +3070,13 @@ arena.forEach((row,y)=>{
   });
 });
 
-  ctx.fillStyle =
-   player.color ||
-   getIllusionRound() === 4
-    ? illusion4PlayerColor
-    : COLORS[(player.pos.x+player.pos.y)%COLORS.length];
+if (player.color) {
+  ctx.fillStyle = player.color;
+} else if (getIllusionRound() === 4) {
+  ctx.fillStyle = illusion4PlayerColor;
+} else {
+  ctx.fillStyle = COLORS[(player.pos.x + player.pos.y) % COLORS.length];
+}
   
   ctx.fillText(
     player.letter,
