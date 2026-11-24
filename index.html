@@ -748,6 +748,8 @@ illusion4LetterColors = Array.from({ length: 20 }, () => Array(12).fill(null));
 const highlights = Array.from({ length: 20 }, () => Array(12).fill(null));
 let landingEffects = [];
 
+let rubberImpactTimes = {};
+
 const player = { pos: { x: 0, y: 0 }, letter: '' };
 let targetWord = '';
 let gameRunning = false;
@@ -2050,10 +2052,17 @@ function drawLandingEffects() {
     ctx.restore();
   });
 }
-
+// ===== RUBBER IMPACT =====
+function rubberImpact(x, y) {
+  rubberImpactTimes[`${x},${y}`] = Date.now();
+}
+  
 function merge(arena, player) { 
   arena[player.pos.y][player.pos.x] = player.letter;
    createLandingEffect(player.pos.x, player.pos.y);
+  // GUMMI-EFFEKT BEIM AUFPRALL
+   rubberImpact(player.pos.x, player.pos.y);
+ 
   // ILLUSION 4 – Buchstabenfarbe speichern
 // Farbe des gelandeten Buchstabens speichern
 illusion4LetterColors[player.pos.y][player.pos.x] =
@@ -3109,7 +3118,35 @@ ctx.fillStyle =
   highlights[y][x] ||
    illusion4LetterColors[y][x] ||
      COLORS[(x+y)%COLORS.length]; 
-      ctx.fillText(v,x+0.5,y+0.5); 
+       // ===== RUBBER IMPACT =====
+const key = `${x},${y}`;
+const impactTime = rubberImpactTimes[key];
+
+if (impactTime) {
+  const elapsed = Date.now() - impactTime;
+
+  if (elapsed < 180) {
+    const pulse =
+      Math.exp(-elapsed / 65) *
+      Math.cos(elapsed / 25);
+
+    const sx = 1 + pulse * 0.025;
+    const sy = 1 - pulse * 0.025;
+
+    ctx.save();
+    ctx.translate(x + 0.5, y + 0.5);
+    ctx.scale(sx, sy);
+    ctx.fillText(v, 0, 0);
+    ctx.restore();
+
+  } else {
+    delete rubberImpactTimes[key];
+    ctx.fillText(v, x + 0.5, y + 0.5);
+  }
+
+} else {
+  ctx.fillText(v, x + 0.5, y + 0.5);
+}
     }
   });
 });
