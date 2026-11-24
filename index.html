@@ -2860,34 +2860,7 @@ let currentX = startX + prefix.length * cellWidth;
     delay: Math.random() * 2
   });
 });
-[...signature].forEach((char, col) => {
-  if (char === ' ') return;
 
-  const span = document.createElement('span');
-  span.textContent = char;
-
-  Object.assign(span.style, {
-    position: 'absolute',
-    left: (startX + prefix.length * cellWidth + col * fontSize * 0.52) + 'px',
-    top: '0px',
-    fontFamily: '"Dancing Script", cursive',
-    fontWeight: '700',
-    fontSize: (fontSize * 1.45) + 'px',
-    lineHeight: lineHeight + 'px',
-    whiteSpace: 'pre',
-    opacity: '0'
-  });
-
-  overlay.appendChild(span);
-
-  letters.push({
-    element: span,
-    targetY: startY + row * lineHeight,
-    y: -20 - Math.random() * rect.height,
-    speed: 160 + Math.random() * 180,
-    delay: Math.random() * 2
-  });
-});
 
     return;
   }
