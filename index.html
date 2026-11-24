@@ -9,6 +9,7 @@ content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
 <style>
 html, body {
   margin: 0;
@@ -2812,11 +2813,23 @@ if (window.visualViewport) {
 
   const letters = [];
 
-  lines.forEach((line, row) => {
-    const lineWidth = line.length * fontSize * 0.6;
-    const startX = Math.max(4, (rect.width - lineWidth) / 2);
+lines.forEach((line, row) => {
+  const fontSize = Math.max(12, Math.min(13, rect.width / 34));
+  const lineHeight = fontSize * 1.20;
+  const cellWidth = fontSize * 0.6;
 
-    [...line].forEach((char, col) => {
+  const isSignature = row === lines.length - 1;
+  const prefix = isSignature ? 'Built by ' : '';
+  const signature = 'Gëzim Hasani';
+
+  const lineWidth = isSignature
+    ? prefix.length * cellWidth + fontSize * 7.5
+    : line.length * cellWidth;
+
+  const startX = Math.max(4, (rect.width - lineWidth) / 2);
+
+  if (isSignature) {
+    [...prefix].forEach((char, col) => {
       if (char === ' ') return;
 
       const span = document.createElement('span');
@@ -2824,7 +2837,7 @@ if (window.visualViewport) {
 
       Object.assign(span.style, {
         position: 'absolute',
-        left: (startX + col * fontSize * 0.6) + 'px',
+        left: (startX + col * cellWidth) + 'px',
         top: '0px',
         fontSize: fontSize + 'px',
         lineHeight: lineHeight + 'px',
@@ -2842,8 +2855,62 @@ if (window.visualViewport) {
         delay: Math.random() * 2
       });
     });
-  });
 
+    const span = document.createElement('span');
+    span.textContent = signature;
+
+    Object.assign(span.style, {
+      position: 'absolute',
+      left: (startX + prefix.length * cellWidth) + 'px',
+      top: '0px',
+      fontFamily: '"Dancing Script", cursive',
+      fontWeight: '700',
+      fontSize: (fontSize * 1.45) + 'px',
+      lineHeight: lineHeight + 'px',
+      whiteSpace: 'nowrap',
+      opacity: '0'
+    });
+
+    overlay.appendChild(span);
+
+    letters.push({
+      element: span,
+      targetY: startY + row * lineHeight,
+      y: -20 - Math.random() * rect.height,
+      speed: 160 + Math.random() * 180,
+      delay: Math.random() * 2
+    });
+
+    return;
+  }
+
+  [...line].forEach((char, col) => {
+    if (char === ' ') return;
+
+    const span = document.createElement('span');
+    span.textContent = char;
+
+    Object.assign(span.style, {
+      position: 'absolute',
+      left: (startX + col * cellWidth) + 'px',
+      top: '0px',
+      fontSize: fontSize + 'px',
+      lineHeight: lineHeight + 'px',
+      whiteSpace: 'pre',
+      opacity: '0'
+    });
+
+    overlay.appendChild(span);
+
+    letters.push({
+      element: span,
+      targetY: startY + row * lineHeight,
+      y: -20 - Math.random() * rect.height,
+      speed: 160 + Math.random() * 180,
+      delay: Math.random() * 2
+    });
+  });
+});
   // Zufällige Reihenfolge der fallenden Buchstaben
   letters.sort(() => Math.random() - 0.5);
 
