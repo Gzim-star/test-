@@ -2282,6 +2282,29 @@ else {
     group.forEach(([y,x])=>highlights[y][x]=color);
   });
 
+// ILLUSION 7 / 8 – OPTISCHER BUCHSTABE MUSS NOCH EXISTIEREN
+const currentIllusion = getIllusionRound();
+
+if (
+  (currentIllusion === 7 || currentIllusion === 8) &&
+  opticalHintShown
+) {
+  const opticalColor =
+    currentIllusion === 7
+      ? illusion7OpticalColor
+      : illusion8OpticalColor;
+
+  const opticalLetterPresent = arena.some((row, y) =>
+    row.some((letter, x) =>
+      letter === targetWord[0] &&
+      illusion4LetterColors[y][x] === opticalColor
+    )
+  );
+
+  if (!opticalLetterPresent) {
+    targetFound = false;
+  }
+}
 if (illusion4ColoredWordFound) {
   targetFound = false;
 }  
@@ -2540,7 +2563,15 @@ function clearDiagonalSixByColor(){
   }
   if(!toClear.length) return;
   toClear.forEach(([y,x])=>highlights[y][x]='#ff3333');
-  setTimeout(()=>{ toClear.forEach(([y,x])=>arena[y][x]=null); applyGravity(); clearHighlights(); },250);
+  setTimeout(()=>{
+   toClear.forEach(([y,x])=>{
+    arena[y][x] = null;
+    illusion4LetterColors[y][x] = null;
+  });
+
+   applyGravity();
+  clearHighlights();
+ },250);
 }
 
 /* ===== GRAVITY ===== */
