@@ -2821,41 +2821,45 @@ lines.forEach((line, row) => {
   const isSignature = row === lines.length - 1;
   const prefix = isSignature ? 'Built by ' : '';
   const signature = 'Gëzim Hasani';
+  const signatureSize = fontSize * 1.45;
 
-  const lineWidth = isSignature
-    ? prefix.length * cellWidth + fontSize * 7.5
-    : line.length * cellWidth;
+const measureCanvas = document.createElement('canvas');
+const measureCtx = measureCanvas.getContext('2d');
+measureCtx.font = `700 ${signatureSize}px "Dancing Script"`;
 
-  const startX = Math.max(4, (rect.width - lineWidth) / 2);
+const signatureWidth = measureCtx.measureText(signature).width;
+let currentX = startX + prefix.length * cellWidth;
 
-  if (isSignature) {
-    [...prefix].forEach((char, col) => {
-      if (char === ' ') return;
+[...signature].forEach((char, col) => {
+  const span = document.createElement('span');
+  span.textContent = char;
 
-      const span = document.createElement('span');
-      span.textContent = char;
+  const previousWidth = measureCtx.measureText(
+    signature.slice(0, col)
+  ).width;
 
-      Object.assign(span.style, {
-        position: 'absolute',
-        left: (startX + col * cellWidth) + 'px',
-        top: '0px',
-        fontSize: fontSize + 'px',
-        lineHeight: lineHeight + 'px',
-        whiteSpace: 'pre',
-        opacity: '0'
-      });
+  Object.assign(span.style, {
+    position: 'absolute',
+    left: (currentX + previousWidth) + 'px',
+    top: '0px',
+    fontFamily: '"Dancing Script", cursive',
+    fontWeight: '700',
+    fontSize: signatureSize + 'px',
+    lineHeight: lineHeight + 'px',
+    whiteSpace: 'pre',
+    opacity: '0'
+  });
 
-      overlay.appendChild(span);
+  overlay.appendChild(span);
 
-      letters.push({
-        element: span,
-        targetY: startY + row * lineHeight,
-        y: -20 - Math.random() * rect.height,
-        speed: 160 + Math.random() * 180,
-        delay: Math.random() * 2
-      });
-    });
-
+  letters.push({
+    element: span,
+    targetY: startY + row * lineHeight,
+    y: -20 - Math.random() * rect.height,
+    speed: 160 + Math.random() * 180,
+    delay: Math.random() * 2
+  });
+});
 [...signature].forEach((char, col) => {
   if (char === ' ') return;
 
