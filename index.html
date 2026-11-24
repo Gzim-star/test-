@@ -3119,19 +3119,22 @@ ctx.fillStyle =
    illusion4LetterColors[y][x] ||
      COLORS[(x+y)%COLORS.length]; 
        // ===== RUBBER IMPACT =====
+// ===== RUBBER IMPACT =====
 const key = `${x},${y}`;
 const impactTime = rubberImpactTimes[key];
 
 if (impactTime) {
   const elapsed = Date.now() - impactTime;
 
-  if (elapsed < 180) {
-    const pulse =
-      Math.exp(-elapsed / 65) *
-      Math.cos(elapsed / 25);
+  if (elapsed < 300) {
 
-    const sx = 1 + pulse * 0.010;
-    const sy = 1 - pulse * 0.010;
+    const progress = elapsed / 300;
+
+    // Erst zusammendrücken, dann zurückfedern
+    const squash = Math.sin(progress * Math.PI * 2);
+
+    const sx = 1 + squash * 0.16;
+    const sy = 1 - squash * 0.16;
 
     ctx.save();
     ctx.translate(x + 0.5, y + 0.5);
