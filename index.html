@@ -2919,33 +2919,6 @@ lines.forEach((line, row) => {
     return;
   }
 
-  [...line].forEach((char, col) => {
-    if (char === ' ') return;
-
-    const span = document.createElement('span');
-    span.textContent = char;
-
-    Object.assign(span.style, {
-      position: 'absolute',
-      left: (startX + col * cellWidth) + 'px',
-      top: '0px',
-      fontSize: fontSize + 'px',
-      lineHeight: lineHeight + 'px',
-      whiteSpace: 'pre',
-      opacity: '0'
-    });
-
-    overlay.appendChild(span);
-
-    letters.push({
-      element: span,
-      targetY: startY + row * lineHeight,
-      y: -20 - Math.random() * rect.height,
-      speed: 160 + Math.random() * 180,
-      delay: Math.random() * 2
-    });
-  });
-});
   // Zufällige Reihenfolge der fallenden Buchstaben
   letters.sort(() => Math.random() - 0.5);
 
