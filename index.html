@@ -3155,6 +3155,12 @@ if(!framesInvisible){
 
 // 🟫 FAKE FRAMES
 fakeFrames.forEach((f, index)=>{
+// ILLUSION 3 – ORIGINALRAHMEN NICHT ALS FAKE ZEICHNEN
+if (
+  getIllusionRound() === 3 &&
+  f.x === frameX &&
+  f.y === frameY
+) return;
 
 if(
   framesInvisible &&
