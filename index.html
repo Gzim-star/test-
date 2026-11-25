@@ -1333,7 +1333,12 @@ function swapColorLieOnce() {
 }  
 let shuffledFrameColors = [];
 let colorIndex = 0;
-
+// ILLUSION 2 – Farbige Hint-Buchstaben
+let illusion2Letters = [];
+let illusion2Ready = false;
+let illusion2Wait = 0;
+let illusion2Color = null;
+  
 function shuffleFrameColors() {
   shuffledFrameColors = [...fakeFrameColors].sort(() => Math.random() - 0.5);
   colorIndex = 0;
@@ -1352,7 +1357,11 @@ const pool = runWordPools[plannedLength];
 
 targetWord = pool.pop();
 
-
+// ILLUSION 2 – Alte Buchstaben-Warteschlange löschen
+illusion2Letters = [];
+illusion2Ready = false;
+illusion2Wait = 0;
+illusion2Color = null;
   
   // 🔹 Rahmenhöhe automatisch an Wortlänge anpassen
   frameH = targetWord.length < 10 ? targetWord.length : 10;
@@ -1449,6 +1458,11 @@ if (getIllusionRound() === 10) {
 }
   
   activateColorLie();
+  // ILLUSION 2 – Hint-Buchstaben rückwärts vorbereiten
+if (getIllusionRound() === 2) {
+  illusion2Letters = targetWord.split('').reverse();
+  illusion2Color = colorLieOriginalColor;
+ }
   // Alten Timer stoppen
   if(colorShiftTimeout){
     clearTimeout(colorShiftTimeout);
@@ -1466,8 +1480,11 @@ colorShiftTimeout = setTimeout(() => {
     swapColorLieOnce();
 
     // Hint bekommt die ursprüngliche Originalrahmenfarbe
-    hintEl.style.color = colorLieOriginalColor;
-
+   hintEl.style.color = colorLieOriginalColor;
+   // Random entscheidet über den Startabstand
+   illusion2Wait = 2 + Math.floor(Math.random() * 5);
+   illusion2Ready = true;
+    
   }
 
 }, 6000);
@@ -2698,6 +2715,26 @@ function resetPlayer(){
     opticalHintShown = true;
   }
 
+  // ILLUSION 2 – Farbige Hint-Buchstaben
+if (
+  illusion === 2 &&
+  illusion2Ready &&
+  illusion2Letters.length > 0
+) {
+  if (illusion2Wait > 0) {
+    illusion2Wait--;
+  } else {
+    // Nächsten Buchstaben rückwärts einsetzen
+    player.letter = illusion2Letters.shift();
+    player.color = illusion2Color;
+
+    // Zufälliger Abstand zum nächsten farbigen Buchstaben
+    if (illusion2Letters.length > 0) {
+      illusion2Wait =
+        1 + Math.floor(Math.random() * 4);
+    }
+  }
+}
   player.pos.y = 0;
   player.pos.x = Math.floor(arena[0].length/2);
 
