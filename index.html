@@ -540,7 +540,7 @@ function playCorrectSound() {
   if (audioCtx.state !== "running") {
     audioCtx.resume().then(() => {
       if (audioCtx.state === "running") {
-        playNextRoundTone();
+        playCorrectSound();
       }
     }).catch(error => console.log("Audio:", error));
 
