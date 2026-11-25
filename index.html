@@ -534,7 +534,7 @@ function initAudio() {
 
 document.addEventListener('pointerdown', initAudio);
   
-function playNextRoundTone() {
+function playCorrectSound() {
   if (!audioCtx) return;
 
   if (audioCtx.state !== "running") {
@@ -2349,7 +2349,7 @@ else if(targetFound){
   stopIllusion3HintCycle();
   stopIllusion10HintCycle();
   flashCorrectAnswer();
-  playNextRoundTone();
+  playCorrectSound();
 }
 else if(targetWordFound || falseHintFound || fakeFrameHit){
   flashWrongAnswer();
