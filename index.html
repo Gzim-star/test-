@@ -2187,14 +2187,14 @@ let fakeFrameHit =
   illusion7TrapTriggered || detectIllusion7FirstLetter();
 
 const found = findWords();
-// ILLUSION 2 – Alle farbigen Hint-Buchstaben im Originalrahmen
+// ILLUSION 2 – Farbige Hint-Buchstaben im Originalrahmen = ungültig
 if (
   getIllusionRound() === 2 &&
   illusion2Ready &&
   illusion2Letters.length === 0 &&
   !illusion2WrongTriggered
 ) {
-  let coloredCount = 0;
+  let coloredPositions = [];
   let originalFrameCount = 0;
 
   for (let y = 0; y < arena.length; y++) {
@@ -2204,10 +2204,11 @@ if (
         arena[y][x] !== null &&
         illusion4LetterColors[y][x] === illusion2Color
       ) {
-        coloredCount++;
+        coloredPositions.push({ x, y });
 
         if (
-          x === frameX &&
+          x >= frameX &&
+          x < frameX + frameW &&
           y >= frameY &&
           y < frameY + frameH
         ) {
@@ -2218,10 +2219,17 @@ if (
   }
 
   if (
-    coloredCount === targetWord.length &&
+    coloredPositions.length === targetWord.length &&
     originalFrameCount === targetWord.length
   ) {
     illusion2WrongTriggered = true;
+
+    // Alle farbigen Hint-Buchstaben löschen
+    coloredPositions.forEach(({ x, y }) => {
+      arena[y][x] = null;
+      illusion4LetterColors[y][x] = null;
+    });
+
     flashWrongAnswer();
     return;
   }
