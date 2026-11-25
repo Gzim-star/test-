@@ -1338,6 +1338,7 @@ let illusion2Letters = [];
 let illusion2Ready = false;
 let illusion2Wait = 0;
 let illusion2Color = null;
+let illusion2WrongTriggered = false;
   
 function shuffleFrameColors() {
   shuffledFrameColors = [...fakeFrameColors].sort(() => Math.random() - 0.5);
@@ -1362,7 +1363,7 @@ illusion2Letters = [];
 illusion2Ready = false;
 illusion2Wait = 0;
 illusion2Color = null;
-  
+illusion2WrongTriggered = false;  
   // 🔹 Rahmenhöhe automatisch an Wortlänge anpassen
   frameH = targetWord.length < 10 ? targetWord.length : 10;
 
@@ -2186,6 +2187,45 @@ let fakeFrameHit =
   illusion7TrapTriggered || detectIllusion7FirstLetter();
 
 const found = findWords();
+// ILLUSION 2 – Alle farbigen Hint-Buchstaben im Originalrahmen
+if (
+  getIllusionRound() === 2 &&
+  illusion2Ready &&
+  illusion2Letters.length === 0 &&
+  !illusion2WrongTriggered
+) {
+  let coloredCount = 0;
+  let originalFrameCount = 0;
+
+  for (let y = 0; y < arena.length; y++) {
+    for (let x = 0; x < arena[y].length; x++) {
+
+      if (
+        arena[y][x] !== null &&
+        illusion4LetterColors[y][x] === illusion2Color
+      ) {
+        coloredCount++;
+
+        if (
+          x === frameX &&
+          y >= frameY &&
+          y < frameY + frameH
+        ) {
+          originalFrameCount++;
+        }
+      }
+    }
+  }
+
+  if (
+    coloredCount === targetWord.length &&
+    originalFrameCount === targetWord.length
+  ) {
+    illusion2WrongTriggered = true;
+    flashWrongAnswer();
+    return;
+  }
+}
 let illusion4ColoredWordFound = false;
   
 if (!found.length && !fakeFrameHit) return;
