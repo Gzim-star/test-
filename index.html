@@ -2194,6 +2194,8 @@ if (!found.length && !fakeFrameHit) return;
   
   let targetWordFound = false;
   let falseHintFound = false;
+
+  let illusion2InvalidWord = false;
   
   found.forEach(group=>{
     const letters = group.map(([y,x])=>arena[y][x]).join('');
@@ -2236,7 +2238,18 @@ if(letters.toUpperCase() === targetWord){
   const inOriginalFrame = group.every(([y,x])=> 
     x===frameX && y>=frameY && y<frameY+frameH
   );
-
+// ILLUSION 2 – Farbige Hint-Wörter im Originalrahmen sind ungültig
+if (
+  getIllusionRound() === 2 &&
+  illusion2Color !== null &&
+  inOriginalFrame &&
+  group.every(([y,x]) =>
+    illusion4LetterColors[y][x] === illusion2Color
+  )
+) {
+  illusion2InvalidWord = true;
+}
+  
 const inFakeFrame = fakeFrames.some(f =>
   group.every(([y,x]) =>
     x === f.x &&
@@ -2298,7 +2311,11 @@ else {
     const color = COLORS[Math.floor(Math.random()*COLORS.length)];
     group.forEach(([y,x])=>highlights[y][x]=color);
   });
-
+// ILLUSION 2 – Ungültiges Farbwort darf nicht gewinnen
+if (illusion2InvalidWord) {
+  targetFound = false;
+}
+  
 // ILLUSION 7 / 8 – OPTISCHER BUCHSTABE MUSS NOCH EXISTIEREN
 const currentIllusion = getIllusionRound();
 
