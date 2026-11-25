@@ -2206,9 +2206,9 @@ if (
       ) {
         coloredPositions.push({ x, y });
 
+        // Exakte Erkennung des Originalrahmens
         if (
-          x >= frameX &&
-          x < frameX + frameW &&
+          x === frameX &&
           y >= frameY &&
           y < frameY + frameH
         ) {
@@ -2217,6 +2217,26 @@ if (
       }
     }
   }
+
+  if (
+    coloredPositions.length === targetWord.length &&
+    originalFrameCount === targetWord.length
+  ) {
+    illusion2WrongTriggered = true;
+
+    // Farbige Buchstaben löschen
+    coloredPositions.forEach(({ x, y }) => {
+      arena[y][x] = null;
+      illusion4LetterColors[y][x] = null;
+    });
+
+    applyGravity();
+    clearHighlights();
+    flashWrongAnswer();
+
+    return;
+  }
+}
 
   if (
     coloredPositions.length === targetWord.length &&
