@@ -2238,22 +2238,6 @@ if (
   }
 }
 
-  if (
-    coloredPositions.length === targetWord.length &&
-    originalFrameCount === targetWord.length
-  ) {
-    illusion2WrongTriggered = true;
-
-    // Alle farbigen Hint-Buchstaben löschen
-    coloredPositions.forEach(({ x, y }) => {
-      arena[y][x] = null;
-      illusion4LetterColors[y][x] = null;
-    });
-
-    flashWrongAnswer();
-    return;
-  }
-}
 let illusion4ColoredWordFound = false;
   
 if (!found.length && !fakeFrameHit) return;
