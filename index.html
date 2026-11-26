@@ -744,7 +744,9 @@ function shuffleWords() {
 
 /* ===== ARENA ===== */
 const arena = Array.from({ length: 20 }, () => Array(12).fill(null));
-illusion4LetterColors = Array.from({ length: 20 }, () => Array(12).fill(null));
+const illusion9DropCells =
+  arena.map(row => row.map(() => false));
+  illusion4LetterColors = Array.from({ length: 20 }, () => Array(12).fill(null));
 
 const highlights = Array.from({ length: 20 }, () => Array(12).fill(null));
 let landingEffects = [];
@@ -770,7 +772,7 @@ let illusion10HintActive = false;
 let illusion10FakeHints = [];
 
 let illusion9FakeHints = [];
-
+let illusion9Drops = [];
 // 🔲 FRAME POSITION (GLOBAL)
 let frameX = 0;
 let frameY = 0;
@@ -1408,6 +1410,10 @@ illusion10FakeHints = [];
   
 hintRevealed = false;
 illusion9FakeHints = [];
+illusion9Drops = [];
+
+illusion9DropCells.forEach(row => row.fill(false));
+  
 // Hint wieder sichtbar machen
 hintEl.style.visibility = 'visible';
 
@@ -2207,7 +2213,9 @@ function checkAndClearWords() {
 let fakeFrameHit =
   illusion7TrapTriggered || detectIllusion7FirstLetter();
 
-const found = findWords();
+const found = findWords().filter(group =>
+  !group.some(([y, x]) => illusion9DropCells[y][x])
+);
 let illusion4ColoredWordFound = false;
   
 if (!found.length && !fakeFrameHit) return;
@@ -2623,7 +2631,8 @@ function clearDiagonalSixByColor(){
    toClear.forEach(([y,x])=>{
     arena[y][x] = null;
     illusion4LetterColors[y][x] = null;
-  });
+  illusion9DropCells[y][x] = false;
+   });
 
    applyGravity();
   clearHighlights();
@@ -2685,6 +2694,12 @@ function applyGravity() {
               illusion4LetterColors[readY][x];
 
             illusion4LetterColors[readY][x] = null;
+          
+          illusion9DropCells[writeY][x] =
+           illusion9DropCells[readY][x];
+
+          illusion9DropCells[readY][x] = false;
+          
           }
 
           writeY--;
@@ -2694,6 +2709,7 @@ function applyGravity() {
       for (let y = writeY; y >= start; y--) {
         arena[y][x] = null;
         illusion4LetterColors[y][x] = null;
+        illusion9DropCells[y][x] = false;
       }
     }
 
@@ -2719,6 +2735,106 @@ function applyGravity() {
 
 /* ===== PLAYER ===== */
 function randomLetter(){ return String.fromCharCode(65+Math.floor(Math.random()*26)); }
+// ===== ILLUSION 9 – MULTI DROP =====
+
+function createIllusion9DropGroup() {
+
+  const count = 30 + Math.floor(Math.random() * 16);
+
+  for (let i = 0; i < count; i++) {
+
+    illusion9Drops.push({
+      x: Math.floor(Math.random() * arena[0].length),
+      y: -1 - Math.random() * 8,
+      letter: randomLetter(),
+      speed: 0.0018 + Math.random() * 0.006
+    });
+
+  }
+}
+
+
+function illusion9FrameFloorAt(x, y) {
+
+  if (
+    !framesInvisible &&
+    x === frameX &&
+    y === frameY + frameH
+  ) return true;
+
+  return fakeFrames.some((f, index) => {
+
+    const visible =
+      !framesInvisible ||
+      (
+        getIllusionRound() === 6 &&
+        (
+          (illusion6FakeVisible && index === illusion6FakeIndex) ||
+          (illusion6BlinkVisible && index === illusion6BlinkIndex)
+        )
+      );
+
+    const h = f.h || frameH;
+
+    return (
+      visible &&
+      x === f.x &&
+      y === f.y + h
+    );
+  });
+}
+
+
+function updateIllusion9Drops(delta) {
+
+  for (let i = illusion9Drops.length - 1; i >= 0; i--) {
+
+    const letter = illusion9Drops[i];
+
+    letter.y += letter.speed * delta;
+
+    const nextY = Math.floor(letter.y + 1);
+
+    const hitBottom = nextY >= arena.length;
+
+    const hitLetter =
+      nextY >= 0 &&
+      nextY < arena.length &&
+      arena[nextY][letter.x] !== null;
+
+    const hitFrame =
+      nextY >= 0 &&
+      nextY < arena.length &&
+      illusion9FrameFloorAt(letter.x, nextY);
+
+    if (hitBottom || hitLetter || hitFrame) {
+
+      let landY = Math.min(arena.length - 1, nextY - 1);
+
+      // Freies Feld oberhalb suchen
+      while (
+        landY >= 0 &&
+        arena[landY][letter.x] !== null
+      ) {
+        landY--;
+      }
+
+      if (landY >= 0) {
+
+        arena[landY][letter.x] = letter.letter;
+
+        illusion9DropCells[landY][letter.x] = true;
+
+        createLandingEffect(letter.x, landY);
+        rubberImpact(letter.x, landY);
+
+        clearDiagonalSixByColor();
+      }
+
+      illusion9Drops.splice(i, 1);
+    }
+  }
+}
 
 function resetPlayer(){
 
@@ -3385,6 +3501,26 @@ if (impactTime) {
   });
 });
 
+// ILLUSION 9 – Zusätzliche fallende Buchstaben
+illusion9Drops.forEach(letter => {
+
+  if (
+    letter.y < arena.length &&
+    letter.y > -1
+  ) {
+
+    ctx.fillStyle = '#ffffff';
+
+    ctx.fillText(
+      letter.letter,
+      letter.x + 0.5,
+      letter.y + 0.5
+    );
+
+  }
+
+});
+
 if (player.color) {
   ctx.fillStyle = player.color;
 } else if (getIllusionRound() === 4) {
@@ -3401,6 +3537,7 @@ if (player.color) {
   drawLandingEffects();
  }
 }
+
 /* ===== LOOP ===== */
 let lastTime=0, dropCounter=0, dropInterval=700;
 function update(time=0){
@@ -3410,6 +3547,21 @@ function update(time=0){
     dropCounter+=delta;
     if(dropCounter>dropInterval){ drop(); dropCounter=0; }
   }
+  
+     if (
+
+      getIllusionRound() === 9 &&
+
+      illusion9Drops.length > 0
+
+    ) {
+
+      updateIllusion9Drops(Math.min(delta, 50));
+
+    }
+
+  }
+
   draw();
   requestAnimationFrame(update);
 }
@@ -3592,6 +3744,14 @@ function restartGame() {
 function dropFast() {
 
   if (!gameRunning || illusion7TrapTriggered) return;
+
+  if (getIllusionRound() === 9) {
+
+    createIllusion9DropGroup();
+
+    return;
+
+  }
 
   while (!collide(arena, player)) {
 
