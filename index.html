@@ -877,6 +877,7 @@ let fakePulseTime = 0;
 let illusion4FakePulseActive = false;
 let illusion4FakePulseIndex = -1;
 let illusion4FakePulseTime = 0;
+let illusion4ColoredFrameIndex = -1;
 let colorShiftTimeout = null;
 let colorShiftFakeTriggered = false;
 let colorShiftIllusionTriggered = false;
@@ -1361,6 +1362,7 @@ const pool = runWordPools[plannedLength];
 
 targetWord = pool.pop();
 
+illusion4ColoredFrameIndex = -1;
 // ILLUSION 2 – Alte Buchstaben-Warteschlange löschen
 illusion2Letters = [];
 illusion2Ready = false;
@@ -2102,7 +2104,7 @@ if (
   // Runde 4 Trick
 // ILLUSION 4 – Unsichtbarer Buchstabe löst Fake-Pulse aus
 if(getIllusionRound() === 4){
-  const secondFromBottom = frameY + frameH - 2;
+  const secondFromBottom = frameY + frameH - 1;
 
   if(
     player.pos.x === frameX &&
@@ -2117,8 +2119,8 @@ if(getIllusionRound() === 4){
     ) {
       illusion4FakePulseIndex =
         Math.floor(Math.random() * fakeFrames.length);
-
-      illusion4FakePulseTime = 0;
+        illusion4ColoredFrameIndex = illusion4FakePulseIndex;
+       illusion4FakePulseTime = 0;
       illusion4FakePulseActive = true;
      }
     }
@@ -3309,7 +3311,12 @@ if (
 ctx.fillStyle = '#000000';
 ctx.globalAlpha = alpha;
 ctx.strokeStyle =
-  illusion4PulseColor || f.color || '#ffffff';
+  (
+    getIllusionRound() === 4 &&
+    index === illusion4ColoredFrameIndex
+  )
+    ? illusion4LetterColor
+    : (illusion4PulseColor || f.color || '#ffffff');
 ctx.lineWidth = borderWidth;
 
 
