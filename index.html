@@ -873,6 +873,10 @@ let fakePulseTriggered = false;
 let fakePulseTimeout = null;
 let fakePulseActive = false;
 let fakePulseTime = 0;
+// ILLUSION 4 – Einzelner Fake-Frame-Pulse
+let illusion4FakePulseActive = false;
+let illusion4FakePulseIndex = -1;
+let illusion4FakePulseTime = 0;
 let colorShiftTimeout = null;
 let colorShiftFakeTriggered = false;
 let colorShiftIllusionTriggered = false;
@@ -2096,11 +2100,26 @@ if (
 }
 
   // Runde 4 Trick
-  if(getIllusionRound() === 4){
-    const secondFromBottom = frameY + frameH - 2;
+// ILLUSION 4 – Unsichtbarer Buchstabe löst Fake-Pulse aus
+if(getIllusionRound() === 4){
+  const secondFromBottom = frameY + frameH - 2;
 
-    if(player.pos.x === frameX && player.pos.y === secondFromBottom){
-      round4InvisibleY = player.pos.y;
+  if(
+    player.pos.x === frameX &&
+    player.pos.y === secondFromBottom
+  ){
+    round4InvisibleY = player.pos.y;
+
+    // Nur ein einziger Fake-Rahmen pulsiert
+    if (
+      !illusion4FakePulseActive &&
+      fakeFrames.length > 0
+    ) {
+      illusion4FakePulseIndex =
+        Math.floor(Math.random() * fakeFrames.length);
+
+      illusion4FakePulseTime = 0;
+      illusion4FakePulseActive = true;
     }
   }
 }
@@ -3228,7 +3247,31 @@ if(
 ) return;
     let borderWidth = 0.05;
     let alpha = 1;
+// ILLUSION 4 – Einzelner Fake-Frame-Pulse
+let illusion4PulseColor = null;
 
+if (
+  getIllusionRound() === 4 &&
+  illusion4FakePulseActive &&
+  index === illusion4FakePulseIndex
+) {
+  if (gameRunning) illusion4FakePulseTime += 16;
+
+  const progress =
+    illusion4FakePulseTime / pulseDuration;
+
+  if (progress >= 1) {
+    illusion4FakePulseActive = false;
+    illusion4FakePulseIndex = -1;
+  } else {
+    const pulse = Math.sin(progress * Math.PI);
+
+    borderWidth = 0.05 + pulse * 0.08;
+    alpha = 1 + pulse * 0.5;
+
+    illusion4PulseColor = illusion4LetterColor;
+  }
+}
     if(fakePulseActive){
      if (gameRunning) fakePulseTime += 16;
       let progress = fakePulseTime / pulseDuration;
@@ -3264,7 +3307,8 @@ if (
 
 ctx.fillStyle = '#000000';
 ctx.globalAlpha = alpha;
-ctx.strokeStyle = f.color || '#ffffff';
+ctx.strokeStyle =
+  illusion4PulseColor || f.color || '#ffffff';
 ctx.lineWidth = borderWidth;
 
 
