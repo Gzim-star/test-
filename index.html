@@ -3542,19 +3542,23 @@ let lastTime=0, dropCounter=0, dropInterval=700;
 function update(time=0){
   const delta = time - lastTime;
   lastTime=time;
+
   if(gameRunning){
     dropCounter+=delta;
-    if(dropCounter>dropInterval){ drop(); dropCounter=0; }
+    if(dropCounter>dropInterval){
+      drop();
+      dropCounter=0;
+    }
   }
-}
+
   if (
     getIllusionRound() === 9 &&
-      illusion9Drops.length > 0
-    ) {
-      updateIllusion9Drops(Math.min(delta, 50));
-    }
-   
-    draw();
+    illusion9Drops.length > 0
+  ) {
+    updateIllusion9Drops(Math.min(delta, 50));
+  }
+
+  draw();
   requestAnimationFrame(update);
 }
 
