@@ -2132,14 +2132,20 @@ if(getIllusionRound() === 4){
     }
   }
 }
-  function move(dir) {
+function move(dir) {
+  const newX = player.pos.x + dir;
 
-  if (!gameRunning) return;
+  if (collide(newX, player.pos.y)) return;
 
-  player.pos.x += dir;
+  player.pos.x = newX;
 
-  if (collide(arena, player)) {
-    player.pos.x -= dir;
+  if (getIllusionRound() === 9) {
+    illusion9Drops.forEach(drop => {
+      drop.x = Math.max(
+        0,
+        Math.min(arena[0].length - 1, drop.x + dir)
+      );
+    });
   }
 }
 function drop() {
@@ -3551,12 +3557,13 @@ function update(time=0){
     }
   }
 
-  if (
-    getIllusionRound() === 9 &&
-    illusion9Drops.length > 0
-  ) {
-    updateIllusion9Drops(Math.min(delta, 50));
-  }
+if (
+  gameRunning &&
+  getIllusionRound() === 9 &&
+  illusion9Drops.length > 0
+) {
+  updateIllusion9Drops(Math.min(delta, 50));
+}
 
   draw();
   requestAnimationFrame(update);
