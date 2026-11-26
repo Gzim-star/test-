@@ -746,7 +746,7 @@ function shuffleWords() {
 const arena = Array.from({ length: 20 }, () => Array(12).fill(null));
 const illusion9DropCells =
   arena.map(row => row.map(() => false));
-let illusion4LetterColors = Array.from({ length: 20 }, () => Array(12).fill(null));
+  illusion4LetterColors = Array.from({ length: 20 }, () => Array(12).fill(null));
 
 const highlights = Array.from({ length: 20 }, () => Array(12).fill(null));
 let landingEffects = [];
@@ -3546,22 +3546,15 @@ function update(time=0){
     dropCounter+=delta;
     if(dropCounter>dropInterval){ drop(); dropCounter=0; }
   }
-  
-     if (
-
-      getIllusionRound() === 9 &&
-
+}
+  if (
+    getIllusionRound() === 9 &&
       illusion9Drops.length > 0
-
     ) {
-
       updateIllusion9Drops(Math.min(delta, 50));
-
     }
-
-  }
-
-  draw();
+   
+    draw();
   requestAnimationFrame(update);
 }
 
