@@ -2133,11 +2133,15 @@ if(getIllusionRound() === 4){
   }
 }
 function move(dir) {
-  const newX = player.pos.x + dir;
 
-  if (collide(newX, player.pos.y)) return;
+  if (!gameRunning) return;
 
-  player.pos.x = newX;
+  player.pos.x += dir;
+
+  if (collide(arena, player)) {
+    player.pos.x -= dir;
+    return;
+  }
 
   if (getIllusionRound() === 9) {
     illusion9Drops.forEach(drop => {
@@ -3557,13 +3561,13 @@ function update(time=0){
     }
   }
 
-if (
-  gameRunning &&
-  getIllusionRound() === 9 &&
-  illusion9Drops.length > 0
-) {
-  updateIllusion9Drops(Math.min(delta, 50));
-}
+  if (
+    gameRunning &&
+    getIllusionRound() === 9 &&
+    illusion9Drops.length > 0
+  ) {
+    updateIllusion9Drops(Math.min(delta, 50));
+  }
 
   draw();
   requestAnimationFrame(update);
