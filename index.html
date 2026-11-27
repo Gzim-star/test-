@@ -1057,6 +1057,7 @@ let voidBlinkRestoreTimer = null;
 let voidEndTimer = null;
 let voidTriggeredForRound5 = false;
 let voidHintLocked = false;
+let illusion5FloorOnly = false;
 function clearVoidTimers() {
   [
     voidStartTimer,
@@ -1125,7 +1126,7 @@ if (seconds <= 0) {
   // Den ursprünglichen 60-Sekunden-Endtimer stoppen
   clearTimeout(voidEndTimer);
   voidEndTimer = null;
-
+  illusion5FloorOnly = true;
   // THE VOID beenden
   gameElement.classList.remove(
     'void-hidden',
@@ -1163,6 +1164,7 @@ if (seconds <= 0) {
         'void-reset-blink-hidden'
       );
       
+      illusion5FloorOnly = true;
       voidHintLocked = true; 
       gameElement.classList.add('void-hint-hidden');
     
@@ -1189,6 +1191,7 @@ document.getElementById('fakeTimer').textContent = '00:00:10';
     'void-hint-hidden'
   );
   
+  illusion5FloorOnly = false;
   voidHintLocked = false;
   voidTriggeredForRound5 = false;
 }
@@ -3339,16 +3342,29 @@ if(!framesInvisible){
   ctx.strokeRect(frameX+0.05, frameY-0.27, 0.9, frameH-0.2);
 
   // Boden des Originalrahmens
-  ctx.beginPath();
-  ctx.moveTo(frameX+0.05, frameY+frameH-0.47);
-  ctx.lineTo(frameX+0.95, frameY+frameH-0.47);
-  ctx.stroke();
-
-  // Rahmen
   ctx.globalAlpha = alpha;
   ctx.strokeStyle = currentColor;
   ctx.lineWidth = borderWidth;
-  ctx.strokeRect(frameX+0.05, frameY-0.27, 0.9, frameH-0.2);
+
+  ctx.beginPath();
+
+  if (
+    getIllusionRound() === 5 &&
+    illusion5FloorOnly
+  ) {
+    // Nur der Boden bleibt sichtbar
+    ctx.moveTo(frameX + 0.05, frameY + frameH - 0.47);
+    ctx.lineTo(frameX + 0.95, frameY + frameH - 0.47);
+  } else {
+    ctx.strokeRect(
+      frameX + 0.05,
+      frameY - 0.27,
+      0.9,
+      frameH - 0.2
+    );
+  }
+
+  ctx.stroke();
   ctx.globalAlpha = 1;
 
 
@@ -3446,14 +3462,24 @@ ctx.lineWidth = borderWidth;
 
 
 const fakeFrameH = f.h || frameH;
-
-ctx.fillRect(f.x+0.05, f.y-0.27, 0.9, fakeFrameH-0.2);
-ctx.strokeRect(f.x+0.05, f.y-0.27, 0.9, fakeFrameH-0.2);
 // Boden des Fake-Rahmens
-ctx.beginPath();
-ctx.moveTo(f.x+0.05, f.y+fakeFrameH-0.47);
-ctx.lineTo(f.x+0.95, f.y+fakeFrameH-0.47);
-ctx.stroke();
+if (
+  getIllusionRound() === 5 &&
+  illusion5FloorOnly
+) {
+  ctx.beginPath();
+  ctx.moveTo(f.x + 0.05, f.y + fakeFrameH - 0.47);
+  ctx.lineTo(f.x + 0.95, f.y + fakeFrameH - 0.47);
+  ctx.stroke();
+} else {
+  ctx.fillRect(f.x + 0.05, f.y - 0.27, 0.9, fakeFrameH - 0.2);
+  ctx.strokeRect(f.x + 0.05, f.y - 0.27, 0.9, fakeFrameH - 0.2);
+
+  ctx.beginPath();
+  ctx.moveTo(f.x + 0.05, f.y + fakeFrameH - 0.47);
+  ctx.lineTo(f.x + 0.95, f.y + fakeFrameH - 0.47);
+  ctx.stroke();
+}
 
 ctx.globalAlpha = 1;
   });
