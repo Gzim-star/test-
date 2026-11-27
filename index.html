@@ -744,6 +744,8 @@ function shuffleWords() {
 
 /* ===== ARENA ===== */
 const arena = Array.from({ length: 20 }, () => Array(12).fill(null));
+const illusion9RainArena =
+  Array.from({ length: 20 }, () => Array(12).fill(null));
 const illusion9DropCells =
   arena.map(row => row.map(() => false));
   illusion4LetterColors = Array.from({ length: 20 }, () => Array(12).fill(null));
@@ -1414,7 +1416,7 @@ illusion10FakeHints = [];
 hintRevealed = false;
 illusion9FakeHints = [];
 illusion9Drops = [];
-
+illusion9RainArena.forEach(row => row.fill(null));
 illusion9DropCells.forEach(row => row.fill(false));
   
 // Hint wieder sichtbar machen
@@ -1982,7 +1984,10 @@ function collide(arena, player) {
     x >= arena[0].length
   ) return true;
 
-  if (arena[y][x] !== null) return true;
+  if (
+  arena[y][x] !== null ||
+  illusion9RainArena[y][x] !== null
+) return true;
 
   // Rahmenboden nur dann, wenn der Spieler
   // zuvor tatsächlich in diesen Rahmen gefallen ist
@@ -2226,9 +2231,8 @@ function checkAndClearWords() {
 let fakeFrameHit =
   illusion7TrapTriggered || detectIllusion7FirstLetter();
 
-const found = findWords().filter(group =>
-  !group.some(([y, x]) => illusion9DropCells[y][x])
-);
+const found = findWords();
+  
 let illusion4ColoredWordFound = false;
   
 if (!found.length && !fakeFrameHit) return;
@@ -2623,34 +2627,68 @@ function extract(word,pos,found){
   WORDS.forEach(w=>{ const i=upperWord.indexOf(w); if(i!==-1) found.push(pos.slice(i,i+w.length)); });
 }
 
+
 function clearDiagonalSixByColor(){
   const toClear=[];
+
+  function hasLetter(y, x) {
+    return (
+      arena[y][x] !== null ||
+      illusion9RainArena[y][x] !== null
+    );
+  }
+
   for(let y=arena.length-1;y>=0;y--){
     for(let x=0;x<arena[0].length;x++){
-      if(!arena[y][x]) continue;
+
+      if(!hasLetter(y,x)) continue;
+
       const baseColor = COLORS[(x+y)%COLORS.length];
       const chain=[[y,x]];
+
       let ny=y-1,nx=x+1;
-      while(ny>=0 && nx<arena[0].length && arena[ny][nx] && COLORS[(nx+ny)%COLORS.length]===baseColor){
+
+      while(
+        ny>=0 &&
+        nx<arena[0].length &&
+        hasLetter(ny,nx) &&
+        COLORS[(nx+ny)%COLORS.length]===baseColor
+      ){
         chain.push([ny,nx]);
         ny--; nx++;
       }
-      if(chain.length>=4) chain.forEach(p=>toClear.push(p));
+
+      if(chain.length>=4) {
+        chain.forEach(p=>toClear.push(p));
+      }
     }
   }
-  if(!toClear.length) return;
-  toClear.forEach(([y,x])=>highlights[y][x]='#ff3333');
-  setTimeout(()=>{
-   toClear.forEach(([y,x])=>{
-    arena[y][x] = null;
-    illusion4LetterColors[y][x] = null;
-  illusion9DropCells[y][x] = false;
-   });
 
-   applyGravity();
-  clearHighlights();
- },250);
+  if(!toClear.length) return;
+
+  const uniqueToClear = [
+    ...new Map(
+      toClear.map(([y,x])=>[`${y},${x}`,[y,x]])
+    ).values()
+  ];
+
+  uniqueToClear.forEach(([y,x])=>{
+    highlights[y][x]='#ff3333';
+  });
+
+  setTimeout(()=>{
+    uniqueToClear.forEach(([y,x])=>{
+      arena[y][x] = null;
+      illusion9RainArena[y][x] = null;
+      illusion4LetterColors[y][x] = null;
+      illusion9DropCells[y][x] = false;
+    });
+
+    applyGravity();
+    clearHighlights();
+  },250);
 }
+
 
 /* ===== GRAVITY ===== */
 
@@ -2696,23 +2734,28 @@ function applyGravity() {
 
       for (let readY = end; readY >= start; readY--) {
 
-        if (arena[readY][x] !== null) {
+        const originalLetter = arena[readY][x];
+        const rainLetter = illusion9RainArena[readY][x];
+
+        if (originalLetter !== null || rainLetter !== null) {
 
           if (writeY !== readY) {
 
-            arena[writeY][x] = arena[readY][x];
+            arena[writeY][x] = originalLetter;
+            illusion9RainArena[writeY][x] = rainLetter;
+
             arena[readY][x] = null;
+            illusion9RainArena[readY][x] = null;
 
             illusion4LetterColors[writeY][x] =
               illusion4LetterColors[readY][x];
 
             illusion4LetterColors[readY][x] = null;
-          
-          illusion9DropCells[writeY][x] =
-           illusion9DropCells[readY][x];
 
-          illusion9DropCells[readY][x] = false;
-          
+            illusion9DropCells[writeY][x] =
+              illusion9DropCells[readY][x];
+
+            illusion9DropCells[readY][x] = false;
           }
 
           writeY--;
@@ -2721,6 +2764,7 @@ function applyGravity() {
 
       for (let y = writeY; y >= start; y--) {
         arena[y][x] = null;
+        illusion9RainArena[y][x] = null;
         illusion4LetterColors[y][x] = null;
         illusion9DropCells[y][x] = false;
       }
@@ -2730,15 +2774,12 @@ function applyGravity() {
 
       if (isFrameFloorAt(x, y)) {
 
-        // Nur bis zum Rahmenboden Schwerkraft anwenden
         compactSegment(segmentStart, y - 1);
 
-        // Hinter dem Boden beginnt ein neuer Bereich
         segmentStart = y;
       }
     }
 
-    // Letzten Bereich bearbeiten
     compactSegment(segmentStart, arena.length - 1);
   }
 }
@@ -2799,9 +2840,7 @@ function illusion9FrameFloorAt(x, y) {
 
 
 function updateIllusion9Drops(delta) {
-
   for (let i = illusion9Drops.length - 1; i >= 0; i--) {
-
     const letter = illusion9Drops[i];
 
     letter.y += letter.speed * delta;
@@ -2813,7 +2852,10 @@ function updateIllusion9Drops(delta) {
     const hitLetter =
       nextY >= 0 &&
       nextY < arena.length &&
-      arena[nextY][letter.x] !== null;
+      (
+        arena[nextY][letter.x] !== null ||
+        illusion9RainArena[nextY][letter.x] !== null
+      );
 
     const hitFrame =
       nextY >= 0 &&
@@ -2827,15 +2869,16 @@ function updateIllusion9Drops(delta) {
       // Freies Feld oberhalb suchen
       while (
         landY >= 0 &&
-        arena[landY][letter.x] !== null
+        (
+          arena[landY][letter.x] !== null ||
+          illusion9RainArena[landY][letter.x] !== null
+        )
       ) {
         landY--;
       }
 
       if (landY >= 0) {
-
-        arena[landY][letter.x] = letter.letter;
-
+        illusion9RainArena[landY][letter.x] = letter.letter;
         illusion9DropCells[landY][letter.x] = true;
 
         createLandingEffect(letter.x, landY);
@@ -2848,6 +2891,8 @@ function updateIllusion9Drops(delta) {
     }
   }
 }
+
+
 function resetPlayer(){
 
   player.letter = randomLetter();
@@ -3536,8 +3581,19 @@ if (impactTime) {
   });
 });
 
+// ILLUSION 9 – GELANDETE REGENBUCHSTABEN
+illusion9RainArena.forEach((row, y) => {
+  row.forEach((v, x) => {
+    if (v !== null) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(v, x + 0.5, y + 0.5);
+    }
+  });
+});
+
 // ILLUSION 9 – Zusätzliche fallende Buchstaben
 illusion9Drops.forEach(letter => {
+
 
   if (
     letter.y < arena.length &&
