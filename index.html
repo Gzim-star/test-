@@ -746,8 +746,7 @@ function shuffleWords() {
 const arena = Array.from({ length: 20 }, () => Array(12).fill(null));
 const illusion9RainArena =
   Array.from({ length: 20 }, () => Array(12).fill(null));
-const illusion9DropCells =
-  arena.map(row => row.map(() => false));
+
   illusion4LetterColors = Array.from({ length: 20 }, () => Array(12).fill(null));
 
 const highlights = Array.from({ length: 20 }, () => Array(12).fill(null));
@@ -1417,7 +1416,7 @@ hintRevealed = false;
 illusion9FakeHints = [];
 illusion9Drops = [];
 illusion9RainArena.forEach(row => row.fill(null));
-illusion9DropCells.forEach(row => row.fill(false));
+
   
 // Hint wieder sichtbar machen
 hintEl.style.visibility = 'visible';
@@ -1907,6 +1906,8 @@ hintRevealed = false;
 hintDisabled = false;
 
   arena.forEach(r => r.fill(null));
+  illusion9RainArena.forEach(row => row.fill(null));
+  illusion9Drops = [];
   illusion4LetterColors.forEach(row => row.fill(null));
   clearHighlights();
 
@@ -2681,7 +2682,7 @@ function clearDiagonalSixByColor(){
       arena[y][x] = null;
       illusion9RainArena[y][x] = null;
       illusion4LetterColors[y][x] = null;
-      illusion9DropCells[y][x] = false;
+      
     });
 
     applyGravity();
@@ -2752,10 +2753,7 @@ function applyGravity() {
 
             illusion4LetterColors[readY][x] = null;
 
-            illusion9DropCells[writeY][x] =
-              illusion9DropCells[readY][x];
 
-            illusion9DropCells[readY][x] = false;
           }
 
           writeY--;
@@ -2766,7 +2764,7 @@ function applyGravity() {
         arena[y][x] = null;
         illusion9RainArena[y][x] = null;
         illusion4LetterColors[y][x] = null;
-        illusion9DropCells[y][x] = false;
+        
       }
     }
 
@@ -2879,7 +2877,7 @@ function updateIllusion9Drops(delta) {
 
       if (landY >= 0) {
         illusion9RainArena[landY][letter.x] = letter.letter;
-        illusion9DropCells[landY][letter.x] = true;
+        
 
         createLandingEffect(letter.x, landY);
         rubberImpact(letter.x, landY);
@@ -2952,6 +2950,8 @@ if (
 
   if(collide(arena,player)) {
     arena.forEach(r=>r.fill(null));
+    illusion9RainArena.forEach(row => row.fill(null));
+    illusion9Drops = [];
     illusion4LetterColors.forEach(row => row.fill(null));
   }
 }
@@ -3809,6 +3809,8 @@ function restartGame() {
   if (fakePulseTimeout) clearTimeout(fakePulseTimeout);
 
   arena.forEach(r => r.fill(null));
+  illusion9RainArena.forEach(row => row.fill(null));
+  illusion9Drops = [];
   illusion4LetterColors.forEach(row => row.fill(null));
   clearHighlights();
   shuffleIllusions();
