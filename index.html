@@ -3581,17 +3581,46 @@ if (impactTime) {
   });
 });
 
-// ILLUSION 9 – GELANDETE REGENBUCHSTABEN
+  // ILLUSION 9 – GELANDETE REGENBUCHSTABEN
 illusion9RainArena.forEach((row, y) => {
   row.forEach((v, x) => {
     if (v !== null) {
-      ctx.fillStyle = '#ffffff';
-      ctx.fillText(v, x + 0.5, y + 0.5);
+
+      ctx.fillStyle =
+        highlights[y][x] || '#ffffff';
+
+      const key = `${x},${y}`;
+      const impactTime = rubberImpactTimes[key];
+
+      if (impactTime) {
+        const elapsed = Date.now() - impactTime;
+
+        if (elapsed < 300) {
+          const progress = elapsed / 300;
+          const squash = Math.sin(progress * Math.PI * 2);
+
+          const sx = 1 + squash * 0.16;
+          const sy = 1 - squash * 0.16;
+
+          ctx.save();
+          ctx.translate(x + 0.5, y + 0.5);
+          ctx.scale(sx, sy);
+          ctx.fillText(v, 0, 0);
+          ctx.restore();
+
+        } else {
+          delete rubberImpactTimes[key];
+          ctx.fillText(v, x + 0.5, y + 0.5);
+        }
+
+      } else {
+        ctx.fillText(v, x + 0.5, y + 0.5);
+      }
     }
   });
 });
 
-// ILLUSION 9 – Zusätzliche fallende Buchstaben
+  // ILLUSION 9 – Zusätzliche fallende Buchstaben
 illusion9Drops.forEach(letter => {
 
 
