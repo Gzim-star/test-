@@ -2795,11 +2795,13 @@ function createIllusion9DropGroup() {
 
   for (let i = 0; i < count; i++) {
 
+    const startY = -1 - Math.random() * 8;
+
     illusion9Drops.push({
       x: Math.floor(Math.random() * arena[0].length),
-      y: -1 - Math.random() * 8,
+      y: startY,
       letter: randomLetter(),
-      speed: 0.0018 + Math.random() * 0.006
+      speed: 0.003 + (startY + 9) * 0.00015
     });
 
   }
